@@ -86,7 +86,7 @@ yarn add run-on-server
 
 ### `createServer() => ExpressApplication`
 
-The `createServer` function is obtained from the module `run-on-server/server`. When called, it returns an [Express Application](http://expressjs.com/en/api.html#app) configured to respond to JSON HTTP `POST`s on `/`. You can call its `listen` method to run it on an HTTP port or Unix Socket, or you can pass it into another express app's `app.use` method to mount it at an arbitrary route. See the [Express documentation](<(http://expressjs.com/en/api.html#app)>) for more information.
+The `createServer` function is obtained from the module `run-on-server/server`. When called, it returns an [Express Application](http://expressjs.com/en/api.html#app) configured to respond to JSON HTTP `POST`s on `/`. You can call its `listen` method to run it on an HTTP port or Unix Socket, or you can pass it into another express app's `app.use` method to mount it at an arbitrary route. See the [Express documentation](http://expressjs.com/en/api.html#app) for more information.
 
 ```js
 const createServer = require("run-on-server/server");
