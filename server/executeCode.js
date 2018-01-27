@@ -1,26 +1,35 @@
-const vm = require("vm");
-const mod = require("module");
+var vm = require("vm");
+var acorn = require("acorn");
 
-function hasSyntaxError(code) {
-  // We use runInNewContext to parse the code, but we don't actually run any of
-  // it yet (we just put it in an unused function body). There's an early return
-  // to guard against the user inserting eg. "}) console.log('executed')" as
-  // code.
+function wrapCode(code, includeArgs) {
+  // Verify original code is valid syntax before putting it in the
+  // function wrapper (this will throw and reject the Promise)
+  acorn.parse(code, { ecmaVersion: 2018 });
+
+  var codeWithReturn = "return " + code.trim();
+  var worksWithReturn = true;
   try {
-    vm.runInNewContext("(function(){return;" + code + "});");
-    return false;
+    acorn.parse("(function() {" + codeWithReturn + "})", { ecmaVersion: 2018 });
   } catch (err) {
-    return true;
+    worksWithReturn = false;
   }
-}
 
-function wrapCode(code) {
-  // If the code can be written as an expression, then return that expression.
-  if (!hasSyntaxError("return " + code.trim() + "")) {
-    return mod.wrap("return " + code.trim() + "");
-  } else {
-    return mod.wrap(code);
+  var wrapperParams = [
+    "exports",
+    "require",
+    "module",
+    "__filename",
+    "__dirname"
+  ];
+  if (includeArgs) {
+    wrapperParams.push("args");
   }
+
+  return [
+    "(function(" + wrapperParams.join(", ") + ") {",
+    worksWithReturn ? codeWithReturn : code,
+    "})"
+  ].join("\n");
 }
 
 module.exports = function executeCode(requestBody) {
@@ -30,23 +39,26 @@ module.exports = function executeCode(requestBody) {
     var codeString = requestBody.codeString;
 
     var code;
+    var includeArgs = false;
     if (typeof functionString === "string") {
       code =
         "(" + functionString + ").apply(null, " + JSON.stringify(args) + ");";
     } else if (typeof codeString === "string") {
       code = codeString;
+      includeArgs = true;
     }
 
-    const wrappedCode = wrapCode(code);
+    var wrappedCode = wrapCode(code, includeArgs);
+    console.log(wrappedCode);
 
-    resolve(
-      vm.runInThisContext(wrappedCode)(
-        exports,
-        require,
-        module,
-        __filename,
-        __dirname
-      )
-    );
+    var userFunc = vm.runInThisContext(wrappedCode);
+    var result;
+    if (includeArgs) {
+      result = userFunc(exports, require, module, __filename, __dirname, args);
+    } else {
+      result = userFunc(exports, require, module, __filename, __dirname);
+    }
+
+    resolve(result);
   });
 };

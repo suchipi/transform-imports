@@ -40,7 +40,7 @@ runOnServer(() => {
   console.log(response); // 4
 });
 
-// When using a function, you can pass arguments in as a second argument:
+// You can pass arguments in as a second argument:
 runOnServer(
   (a, b) => {
     return a + b;
@@ -49,6 +49,9 @@ runOnServer(
 ).then(response => {
   console.log(response); // 7
 });
+
+// When using a string, you can access passed arguments via the "args" variable:
+runOnServer("console.log(args)", [1, 2, 3]); // Server logs [1, 2, 3]
 
 // Async functions are also supported:
 runOnServer(async () => {
@@ -132,6 +135,11 @@ runOnServer(
 ).then(response => {
   console.log(response); // 6
 });
+
+// You can access the passed args in the string form via the `args` variable.
+runOnServer(`args.map(x => x * 2)`, [1, 2, 3]).then(response => {
+  console.log(response); // [2, 4, 6]
+});
 ```
 
 * If the function or code string passed to `runOnServer` returns a value, it must be JSON-serializable.
@@ -158,6 +166,7 @@ or:
 ```js
 {
   codeString: string,
+  args?: ?Array<any>
 }
 ```
 
@@ -177,7 +186,7 @@ In the second form, the `codeString` should be any valid JavaScript code string,
 }
 ```
 
-`args` is optional in the first form, and is not used in the second form.
+`args` is optional. When present in the first form, it will be passed to the `functionString` as its arguments. When present in the second form, it is available as an `args` variable.
 
 The response will contain JSON in the body which takes this form:
 

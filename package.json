@@ -11,6 +11,7 @@
   "author": "Suchipi Izumi",
   "license": "MIT",
   "dependencies": {
+    "acorn": "^5.3.0",
     "body-parser": "^1.18.2",
     "express": "^4.16.2",
     "fetch-ponyfill": "^4.1.0"

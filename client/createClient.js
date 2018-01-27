@@ -11,7 +11,8 @@ module.exports = function createClient(url) {
       });
     } else if (typeof fnOrString === "string") {
       body = JSON.stringify({
-        codeString: fnOrString
+        codeString: fnOrString,
+        args: args
       });
     } else {
       throw new Error(
