@@ -15,5 +15,11 @@
     "body-parser": "^1.18.2",
     "express": "^4.16.2",
     "fetch-ponyfill": "^4.1.0"
+  },
+  "devDependencies": {
+    "eslint": "^4.16.0",
+    "eslint-config-unobtrusive": "^1.2.1",
+    "jest": "^22.1.4",
+    "jest-in-case": "^1.0.2"
   }
 }
