@@ -49,7 +49,6 @@ module.exports = function executeCode(requestBody) {
     }
 
     var wrappedCode = wrapCode(code, includeArgs);
-    console.log(wrappedCode);
 
     var userFunc = vm.runInThisContext(wrappedCode);
     var result;
