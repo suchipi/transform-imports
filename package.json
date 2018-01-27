@@ -1,6 +1,6 @@
 {
   "name": "run-on-server",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A client/server HTTP API to run code on a remote server.",
   "keywords": ["eval", "server", "client", "http", "json", "vm", "ipc"],
   "repository": {
