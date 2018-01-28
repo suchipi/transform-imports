@@ -3,7 +3,7 @@ const bodyParser = require("body-parser");
 const executeCode = require("./executeCode");
 
 module.exports = function createServer() {
-  var app = express();
+  const app = express();
   app.use(bodyParser.json());
 
   app.post("/", (req, res) => {
