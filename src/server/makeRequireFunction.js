@@ -25,7 +25,7 @@
 // Invoke with makeRequireFunction(module) where |module| is the Module object
 // to use as the context for the require() function.
 module.exports = function makeRequireFunction(mod) {
-  var Module = mod.constructor;
+  const Module = mod.constructor;
 
   function require(path) {
     try {

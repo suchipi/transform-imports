@@ -1,23 +1,23 @@
-var Module = require("module");
-var path = require("path");
-var makeRequireFunction = require("./makeRequireFunction");
+const Module = require("module");
+const path = require("path");
+const makeRequireFunction = require("./makeRequireFunction");
 
 module.exports = function createFakeModuleEnvironment(requireFrom) {
   if (requireFrom && requireFrom[requireFrom.length - 1] === path.sep) {
     // Trim off trailing slash
     requireFrom = requireFrom.slice(0, -1);
   }
-  var dirname = requireFrom || process.cwd();
-  var filename = path.join(dirname, "this-file-doesnt-actually-exist.js");
+  const dirname = requireFrom || process.cwd();
+  const filename = path.join(dirname, "this-file-doesnt-actually-exist.js");
 
-  var mod = new Module(".", null);
+  const mod = new Module(".", null);
   mod.filename = filename;
   mod.paths = Module._nodeModulePaths(filename);
 
-  var req = makeRequireFunction(mod);
+  const req = makeRequireFunction(mod);
   req.main = mod;
 
-  var exps = {};
+  const exps = {};
   mod.exports = exps;
 
   return {

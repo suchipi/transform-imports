@@ -1,20 +1,20 @@
-var express = require("express");
-var bodyParser = require("body-parser");
-var executeCode = require("./executeCode");
+const express = require("express");
+const bodyParser = require("body-parser");
+const executeCode = require("./executeCode");
 
 module.exports = function createServer() {
   var app = express();
   app.use(bodyParser.json());
 
-  app.post("/", function(req, res) {
+  app.post("/", (req, res) => {
     executeCode(req.body)
-      .then(function(result) {
+      .then(result => {
         res.status(200).send({
           success: true,
           result: result || null
         });
       })
-      .catch(function(err) {
+      .catch(err => {
         res.status(500).send({
           success: false,
           err: {

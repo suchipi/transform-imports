@@ -1,21 +1,21 @@
-var vm = require("vm");
-var acorn = require("acorn");
-var createFakeModuleEnvironment = require("./createFakeModuleEnvironment");
+const vm = require("vm");
+const acorn = require("acorn");
+const createFakeModuleEnvironment = require("./createFakeModuleEnvironment");
 
 function wrapCode(code, includeArgs) {
   // Verify original code is valid syntax before putting it in the
   // function wrapper (this will throw and reject the Promise)
   acorn.parse(code, { ecmaVersion: 2018 });
 
-  var codeWithReturn = "return " + code.trim();
-  var worksWithReturn = true;
+  const codeWithReturn = "return " + code.trim();
+  let worksWithReturn = true;
   try {
     acorn.parse("(function() {" + codeWithReturn + "})", { ecmaVersion: 2018 });
   } catch (err) {
     worksWithReturn = false;
   }
 
-  var wrapperParams = [
+  const wrapperParams = [
     "exports",
     "require",
     "module",
@@ -27,7 +27,7 @@ function wrapCode(code, includeArgs) {
   }
 
   return [
-    "(function(" + wrapperParams.join(", ") + ") {",
+    `(function(${wrapperParams.join(", ")}) {`,
     worksWithReturn ? codeWithReturn : code,
     "})"
   ].join("\n");
@@ -35,26 +35,23 @@ function wrapCode(code, includeArgs) {
 
 module.exports = function executeCode(requestBody) {
   return new Promise(function(resolve, reject) {
-    var functionString = requestBody.functionString;
-    var args = requestBody.args == null ? [] : requestBody.args;
-    var codeString = requestBody.codeString;
-    var requireFrom = requestBody.requireFrom;
+    const { functionString, codeString, requireFrom } = requestBody;
+    const args = requestBody.args == null ? [] : requestBody.args;
 
-    var code;
-    var includeArgs = false;
+    let code;
+    let includeArgs = false;
     if (typeof functionString === "string") {
-      code =
-        "(" + functionString + ").apply(null, " + JSON.stringify(args) + ");";
+      code = `(${functionString}).apply(null, ${JSON.stringify(args)});`;
     } else if (typeof codeString === "string") {
       code = codeString;
       includeArgs = true;
     }
 
-    var wrappedCode = wrapCode(code, includeArgs);
-    var env = createFakeModuleEnvironment(requireFrom);
+    const wrappedCode = wrapCode(code, includeArgs);
+    const env = createFakeModuleEnvironment(requireFrom);
 
-    var userFunc = vm.runInThisContext(wrappedCode);
-    var result;
+    const userFunc = vm.runInThisContext(wrappedCode);
+    let result;
     if (includeArgs) {
       result = userFunc(
         env.exports,

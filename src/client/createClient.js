@@ -1,25 +1,25 @@
-var fetchPonyfill = require("fetch-ponyfill");
-var fetch = fetchPonyfill().fetch;
+const fetchPonyfill = require("fetch-ponyfill");
+const fetch = fetchPonyfill().fetch;
 
 module.exports = function createClient(url) {
   return function runOnServer(fnOrString, args, options) {
-    var requireFrom =
+    const requireFrom =
       typeof options === "object" && options != null
         ? options.requireFrom
         : null;
 
-    var body;
+    let body;
     if (typeof fnOrString === "function") {
       body = JSON.stringify({
         functionString: fnOrString.toString(),
-        args: args,
-        requireFrom: requireFrom
+        args,
+        requireFrom
       });
     } else if (typeof fnOrString === "string") {
       body = JSON.stringify({
         codeString: fnOrString,
-        args: args,
-        requireFrom: requireFrom
+        args,
+        requireFrom
       });
     } else {
       throw new Error(
@@ -33,16 +33,14 @@ module.exports = function createClient(url) {
       headers: {
         "Content-Type": "application/json"
       },
-      body: body
+      body
     })
-      .then(function(response) {
-        return response.json();
-      })
-      .then(function(response) {
+      .then(response => response.json())
+      .then(response => {
         if (response.success) {
           return response.result;
         } else {
-          var error = new Error();
+          const error = new Error();
           Object.defineProperty(error, "name", {
             writable: true,
             enumerable: false,
