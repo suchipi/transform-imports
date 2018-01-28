@@ -2,12 +2,12 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const executeCode = require("./executeCode");
 
-module.exports = function createServer() {
+module.exports = function createServer(serverConfig) {
   const app = express();
   app.use(bodyParser.json());
 
   app.post("/", (req, res) => {
-    executeCode(req.body)
+    executeCode(req.body, serverConfig)
       .then(result => {
         res.status(200).send({
           success: true,

@@ -6,19 +6,26 @@ const createClient = require("../client");
 describe("run-on-server", () => {
   let app;
   let server;
-  beforeAll(done => {
-    app = createServer();
-    server = app.listen(7325, done);
+  let runOnServer;
+
+  const startServer = (serverConfig = undefined, port = 7325) => {
+    return new Promise(resolve => {
+      app = createServer(serverConfig);
+      runOnServer = createClient(`http://localhost:${port}`);
+      server = app.listen(port, resolve);
+    });
+  };
+
+  afterEach(() => {
+    if (server) {
+      server.close();
+    }
   });
 
-  afterAll(() => {
-    server.close();
-  });
-
-  const runOnServer = createClient("http://localhost:7325");
   cases(
     "basic calls and I/O",
     async ({ code, args, expected }) => {
+      await startServer();
       expect(await runOnServer(code, args)).toEqual(expected);
     },
     {
@@ -160,6 +167,7 @@ describe("run-on-server", () => {
   cases(
     "require",
     async ({ code, args, expected }) => {
+      await startServer();
       expect(await runOnServer(code, args)).toEqual(expected);
     },
     {
@@ -185,6 +193,8 @@ describe("run-on-server", () => {
   );
 
   describe("exports", () => {
+    beforeEach(startServer);
+
     it("is empty", async () => {
       expect(await runOnServer(`exports`)).toEqual({});
     });
@@ -204,6 +214,8 @@ describe("run-on-server", () => {
   });
 
   describe("__filename and __dirname", () => {
+    beforeEach(startServer);
+
     it("are fake based on process.cwd() of the server", async () => {
       expect(await runOnServer(`__dirname`)).toBe(process.cwd());
       expect(await runOnServer(`__filename`)).toBe(
@@ -213,6 +225,8 @@ describe("run-on-server", () => {
   });
 
   describe("module", () => {
+    beforeEach(startServer);
+
     it("acts like a normal module object", async () => {
       expect(await runOnServer(`module.id`)).toBeDefined();
       expect(await runOnServer(`module.exports`)).toBeDefined();
@@ -221,6 +235,8 @@ describe("run-on-server", () => {
 
   describe("where to require from", () => {
     it("defaults to process.cwd when not specified", async () => {
+      await startServer();
+
       expect(await runOnServer(`__dirname`)).toBe(process.cwd());
       expect(await runOnServer(`__filename`)).toBe(
         path.join(process.cwd(), "this-file-doesnt-actually-exist.js")
@@ -233,49 +249,46 @@ describe("run-on-server", () => {
       );
     });
 
-    it("can be overriden", async () => {
-      const where = path.resolve(__dirname, "..");
+    describe("overriding the requireFrom", () => {
+      let where;
+      beforeEach(() => {
+        where = path.resolve(__dirname, "..");
+        return startServer({ requireFrom: where });
+      });
 
-      expect(await runOnServer(`__dirname`, [], { requireFrom: where })).toBe(
-        where
-      );
-      expect(await runOnServer(`__filename`, [], { requireFrom: where })).toBe(
-        path.join(where, "this-file-doesnt-actually-exist.js")
-      );
+      it("can be overriden", async () => {
+        expect(await runOnServer(`__dirname`)).toBe(where);
+        expect(await runOnServer(`__filename`)).toBe(
+          path.join(where, "this-file-doesnt-actually-exist.js")
+        );
 
-      expect(
-        runOnServer(`require("fake-module")`, [], { requireFrom: where })
-      ).rejects.toBeTruthy();
+        expect(runOnServer(`require("fake-module")`)).rejects.toBeTruthy();
 
-      expect(
-        await runOnServer(`require("./test/fixtures/fixture.js")`, [], {
-          requireFrom: where
-        })
-      ).toBe("this is fixtures/fixture.js");
+        expect(await runOnServer(`require("./test/fixtures/fixture.js")`)).toBe(
+          "this is fixtures/fixture.js"
+        );
+      });
     });
 
-    it("overrides fine with a trailing slash", async () => {
-      const where = path.resolve(__dirname, "..");
-      const whereWithSlash = where + "/";
+    describe("overriding the requireFrom with a trailing slash", () => {
+      let where;
+      beforeEach(() => {
+        where = path.resolve(__dirname, "..");
+        return startServer({ requireFrom: where + "/" });
+      });
 
-      expect(
-        await runOnServer(`__dirname`, [], { requireFrom: whereWithSlash })
-      ).toBe(where);
-      expect(
-        await runOnServer(`__filename`, [], { requireFrom: whereWithSlash })
-      ).toBe(path.join(where, "this-file-doesnt-actually-exist.js"));
+      it("works fine", async () => {
+        expect(await runOnServer(`__dirname`)).toBe(where);
+        expect(await runOnServer(`__filename`)).toBe(
+          path.join(where, "this-file-doesnt-actually-exist.js")
+        );
 
-      expect(
-        runOnServer(`require("fake-module")`, [], {
-          requireFrom: whereWithSlash
-        })
-      ).rejects.toBeTruthy();
+        expect(runOnServer(`require("fake-module")`)).rejects.toBeTruthy();
 
-      expect(
-        await runOnServer(`require("./test/fixtures/fixture.js")`, [], {
-          requireFrom: whereWithSlash
-        })
-      ).toBe("this is fixtures/fixture.js");
+        expect(await runOnServer(`require("./test/fixtures/fixture.js")`)).toBe(
+          "this is fixtures/fixture.js"
+        );
+      });
     });
   });
 });

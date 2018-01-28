@@ -33,9 +33,10 @@ function wrapCode(code, includeArgs) {
   ].join("\n");
 }
 
-module.exports = function executeCode(requestBody) {
-  return new Promise(function(resolve, reject) {
-    const { functionString, codeString, requireFrom } = requestBody;
+module.exports = function executeCode(requestBody, serverConfig = {}) {
+  return new Promise((resolve, reject) => {
+    const { functionString, codeString } = requestBody;
+    const { requireFrom } = serverConfig;
     const args = requestBody.args == null ? [] : requestBody.args;
 
     let code;

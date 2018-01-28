@@ -2,24 +2,17 @@ const fetchPonyfill = require("fetch-ponyfill");
 const fetch = fetchPonyfill().fetch;
 
 module.exports = function createClient(url) {
-  return function runOnServer(fnOrString, args, options) {
-    const requireFrom =
-      typeof options === "object" && options != null
-        ? options.requireFrom
-        : null;
-
+  return function runOnServer(fnOrString, args) {
     let body;
     if (typeof fnOrString === "function") {
       body = JSON.stringify({
         functionString: fnOrString.toString(),
-        args,
-        requireFrom
+        args
       });
     } else if (typeof fnOrString === "string") {
       body = JSON.stringify({
         codeString: fnOrString,
-        args,
-        requireFrom
+        args
       });
     } else {
       throw new Error(
