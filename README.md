@@ -107,7 +107,7 @@ const createClient = require("run-on-server/client");
 const runOnServer = createClient("http://localhost:3000");
 ```
 
-### `runOnServer(code: Function | string, args: ?Array<any>) => Promise<any>`
+### `runOnServer(code: Function | string, args: ?Array<any>, options: ?Object) => Promise<any>`
 
 The `runOnServer` function is obtained by calling `createClient`. It can be called with either a function or string, and an optional array of arguments to pass to the function (when using a function). It returns a Promise.
 
@@ -146,6 +146,18 @@ runOnServer(`args.map(x => x * 2)`, [1, 2, 3]).then(response => {
 * If an arguments array is passed in as the second argument to `runOnServer`, it must be JSON-serializable.
 * If the serverside code throws an Error, the Promise returned from `runOnServer` will reject with an Error with the same name, message, and stack as the serverside error.
 
+#### `options`
+
+The optional `options` object that can be passed as the third parameter to `runOnServer` has this shape:
+
+```js
+{
+  requireFrom: ?string,
+}
+```
+
+If `requireFrom` is present, it will specify the starting folder for top-level `require` calls in the code passed to `runOnServer`. For instance, If you set `requireFrom` to "/Users/suchipi/Code/run-on-server", then you would be able to load "/Users/suchipi/Code/run-on-server/foo.js" with `require("./foo")`. If you don't specify a `requireFrom`, it will default to the server's current working directory.
+
 ## HTTP JSON API Documentation
 
 This documentation is for the HTTP JSON API that the express app returned from `createServer` serves. Normally, you will not need to worry about how this works, because the client abstracts that information away. However, it may be useful to know how it works in some circumstances.
@@ -157,7 +169,8 @@ Runs the code specified as JSON in the request body. The request body should tak
 ```js
 {
   functionString: string,
-  args: ?Array<any>
+  args: ?Array<any>,
+  requireFrom: ?string,
 }
 ```
 
@@ -166,7 +179,8 @@ or:
 ```js
 {
   codeString: string,
-  args?: ?Array<any>
+  args?: ?Array<any>,
+  requireFrom: ?string,
 }
 ```
 
@@ -187,6 +201,8 @@ In the second form, the `codeString` should be any valid JavaScript code string,
 ```
 
 `args` is optional. When present in the first form, it will be passed to the `functionString` as its arguments. When present in the second form, it is available as an `args` variable.
+
+If `requireFrom` is included, it will specify the starting path for top-level `require` calls in `functionString` or `codeString`.
 
 The response will contain JSON in the body which takes this form:
 

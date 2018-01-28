@@ -1,5 +1,6 @@
 var vm = require("vm");
 var acorn = require("acorn");
+var createFakeModuleEnvironment = require("./createFakeModuleEnvironment");
 
 function wrapCode(code, includeArgs) {
   // Verify original code is valid syntax before putting it in the
@@ -37,6 +38,7 @@ module.exports = function executeCode(requestBody) {
     var functionString = requestBody.functionString;
     var args = requestBody.args == null ? [] : requestBody.args;
     var codeString = requestBody.codeString;
+    var requireFrom = requestBody.requireFrom;
 
     var code;
     var includeArgs = false;
@@ -49,13 +51,27 @@ module.exports = function executeCode(requestBody) {
     }
 
     var wrappedCode = wrapCode(code, includeArgs);
+    var env = createFakeModuleEnvironment(requireFrom);
 
     var userFunc = vm.runInThisContext(wrappedCode);
     var result;
     if (includeArgs) {
-      result = userFunc(exports, require, module, __filename, __dirname, args);
+      result = userFunc(
+        env.exports,
+        env.require,
+        env.module,
+        env.__filename,
+        env.__dirname,
+        args
+      );
     } else {
-      result = userFunc(exports, require, module, __filename, __dirname);
+      result = userFunc(
+        env.exports,
+        env.require,
+        env.module,
+        env.__filename,
+        env.__dirname
+      );
     }
 
     resolve(result);

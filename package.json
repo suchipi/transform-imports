@@ -21,5 +21,8 @@
     "eslint-config-unobtrusive": "^1.2.1",
     "jest": "^22.1.4",
     "jest-in-case": "^1.0.2"
+  },
+  "scripts": {
+    "test": "cd test && jest"
   }
 }
