@@ -17,7 +17,7 @@ module.exports = function createServer(
         res.status(200).send(
           ({
             success: true,
-            result: result,
+            result: typeof result === "undefined" ? null : result,
           }: APIResponse)
         );
       })
