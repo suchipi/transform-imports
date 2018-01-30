@@ -1,8 +1,10 @@
+/* @flow */
 const vm = require("vm");
 const acorn = require("acorn");
 const createFakeModuleEnvironment = require("./createFakeModuleEnvironment");
+import type { APIRequest, ServerConfig } from "../types";
 
-function wrapCode(code, includeArgs) {
+function wrapCode(code: string, includeArgs: boolean): string {
   // Verify original code is valid syntax before putting it in the
   // function wrapper (this will throw and reject the Promise)
   acorn.parse(code, { ecmaVersion: 2018 });
@@ -20,7 +22,7 @@ function wrapCode(code, includeArgs) {
     "require",
     "module",
     "__filename",
-    "__dirname"
+    "__dirname",
   ];
   if (includeArgs) {
     wrapperParams.push("args");
@@ -29,14 +31,17 @@ function wrapCode(code, includeArgs) {
   return [
     `(function(${wrapperParams.join(", ")}) {`,
     worksWithReturn ? codeWithReturn : code,
-    "})"
+    "})",
   ].join("\n");
 }
 
-module.exports = function executeCode(requestBody, serverConfig = {}) {
+module.exports = function executeCode(
+  requestBody: APIRequest,
+  serverConfig: ?ServerConfig
+): Promise<any> {
   return new Promise((resolve, reject) => {
     const { functionString, codeString } = requestBody;
-    const { requireFrom } = serverConfig;
+    const requireFrom = serverConfig && serverConfig.requireFrom;
     const args = requestBody.args == null ? [] : requestBody.args;
 
     let code;
@@ -46,12 +51,24 @@ module.exports = function executeCode(requestBody, serverConfig = {}) {
     } else if (typeof codeString === "string") {
       code = codeString;
       includeArgs = true;
+    } else {
+      throw new Error(
+        "The code must be specified via either functionString or codeString"
+      );
     }
 
     const wrappedCode = wrapCode(code, includeArgs);
     const env = createFakeModuleEnvironment(requireFrom);
 
-    const userFunc = vm.runInThisContext(wrappedCode);
+    const userFunc: (
+      exports: typeof exports,
+      require: typeof require,
+      module: typeof module,
+      __filename: string,
+      __dirname: string,
+      args: ?Array<any>
+    ) => any = vm.runInThisContext(wrappedCode);
+
     let result;
     if (includeArgs) {
       result = userFunc(

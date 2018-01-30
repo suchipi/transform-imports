@@ -1,10 +1,10 @@
 module.exports = {
-  extends: "unobtrusive",
+  extends: ["unobtrusive", "unobtrusive/flowtype", "unobtrusive/import"],
   env: {
     node: true,
-    jest: true
+    jest: true,
   },
   globals: {
-    Promise: false
-  }
+    Promise: false,
+  },
 };

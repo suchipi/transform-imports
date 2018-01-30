@@ -1,8 +1,19 @@
+/* @flow */
 const Module = require("module");
 const path = require("path");
 const makeRequireFunction = require("./makeRequireFunction");
 
-module.exports = function createFakeModuleEnvironment(requireFrom) {
+type ModuleEnvironment = {
+  exports: typeof exports,
+  require: typeof require,
+  module: typeof module,
+  __filename: string,
+  __dirname: string,
+};
+
+module.exports = function createFakeModuleEnvironment(
+  requireFrom: ?string
+): ModuleEnvironment {
   if (requireFrom && requireFrom[requireFrom.length - 1] === path.sep) {
     // Trim off trailing slash
     requireFrom = requireFrom.slice(0, -1);
@@ -25,6 +36,6 @@ module.exports = function createFakeModuleEnvironment(requireFrom) {
     require: req,
     module: mod,
     __filename: filename,
-    __dirname: dirname
+    __dirname: dirname,
   };
 };
