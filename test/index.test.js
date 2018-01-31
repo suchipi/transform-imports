@@ -9,7 +9,7 @@ describe("run-on-server", () => {
   let runOnServer;
 
   const startServer = (serverConfig = undefined, port = 7325) => {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       app = createServer(serverConfig);
       runOnServer = createClient(`http://localhost:${port}`);
       server = app.listen(port, resolve);
@@ -31,41 +31,41 @@ describe("run-on-server", () => {
     {
       "arrow function without block body": {
         code: () => 5,
-        expected: 5
+        expected: 5,
       },
       "arrow function without block body with args": {
-        code: (a, b, c) => [a, b, c].map(x => x * 2),
+        code: (a, b, c) => [a, b, c].map((x) => x * 2),
         args: [1, 2, 3],
-        expected: [2, 4, 6]
+        expected: [2, 4, 6],
       },
       "async arrow function without block body": {
         code: async () => await Promise.resolve(5),
-        expected: 5
+        expected: 5,
       },
       "async arrow function without block body with args": {
         code: async (a, b, c) => await Promise.resolve([a, b, c]),
         args: [1, 2, 3],
-        expected: [1, 2, 3]
+        expected: [1, 2, 3],
       },
       "arrow function with block body": {
         code: () => {
           return 5;
         },
-        expected: 5
+        expected: 5,
       },
       "arrow function with block body with args": {
         code: (a, b, c) => {
-          return [a, b, c].map(x => x * 2);
+          return [a, b, c].map((x) => x * 2);
         },
         args: [1, 2, 3],
-        expected: [2, 4, 6]
+        expected: [2, 4, 6],
       },
       "async arrow function with block body": {
         code: async () => {
           const number = await Promise.resolve(5);
           return number;
         },
-        expected: 5
+        expected: 5,
       },
       "async arrow function with block body with args": {
         code: async (a, b, c) => {
@@ -73,33 +73,33 @@ describe("run-on-server", () => {
           return array;
         },
         args: [1, 2, 3],
-        expected: [1, 2, 3]
+        expected: [1, 2, 3],
       },
       "function expression": {
         code: function() {
           return 5;
         },
-        expected: 5
+        expected: 5,
       },
       "function expression with args": {
         code: function(a, b, c) {
-          return [a, b, c].map(x => x * 2);
+          return [a, b, c].map((x) => x * 2);
         },
         args: [1, 2, 3],
-        expected: [2, 4, 6]
+        expected: [2, 4, 6],
       },
       "async function expression": {
         code: async function() {
           return await Promise.resolve(5);
         },
-        expected: 5
+        expected: 5,
       },
       "async function expression with args": {
         code: async function(a, b, c) {
           return await Promise.resolve(a + b + c);
         },
         args: [1, 2, 3],
-        expected: 6
+        expected: 6,
       },
       "function declaration": {
         code: (() => {
@@ -109,18 +109,18 @@ describe("run-on-server", () => {
 
           return foo;
         })(),
-        expected: 5
+        expected: 5,
       },
       "function declaration with args": {
         code: (() => {
           function foo(a, b, c) {
-            return [a, b, c].map(x => x * 2);
+            return [a, b, c].map((x) => x * 2);
           }
 
           return foo;
         })(),
         args: [1, 2, 3],
-        expected: [2, 4, 6]
+        expected: [2, 4, 6],
       },
       "async function declaration": {
         code: (() => {
@@ -130,37 +130,37 @@ describe("run-on-server", () => {
 
           return foo;
         })(),
-        expected: 5
+        expected: 5,
       },
       "async function declaration with args": {
         code: (() => {
           async function foo(a, b, c) {
-            const doubled = await Promise.resolve([a, b, c].map(x => x * 2));
+            const doubled = await Promise.resolve([a, b, c].map((x) => x * 2));
             return doubled;
           }
 
           return foo;
         })(),
         args: [1, 2, 3],
-        expected: [2, 4, 6]
+        expected: [2, 4, 6],
       },
       "string (bare expression)": {
         code: "5",
-        expected: 5
+        expected: 5,
       },
       "string (bare expression) with args": {
         code: "args.map(x => x * 2)",
         args: [1, 2, 3],
-        expected: [2, 4, 6]
+        expected: [2, 4, 6],
       },
       "string (statement)": {
         code: "const foo = 5",
-        expected: null
+        expected: null,
       },
       "string (statement) with args": {
         code: "const foo = args",
-        expected: null
-      }
+        expected: null,
+      },
     }
   );
 
@@ -173,22 +173,22 @@ describe("run-on-server", () => {
     {
       "requiring a relative js file": {
         code: `require("./fixtures/fixture.js")`,
-        expected: "this is fixtures/fixture.js"
+        expected: "this is fixtures/fixture.js",
       },
       "requiring a relative json file": {
         code: `require("./fixtures/fixture.json")`,
         expected: {
-          this: ["is", "test", "json"]
-        }
+          this: ["is", "test", "json"],
+        },
       },
       "requiring a js package from an immediate node_modules dir": {
         code: `require("fake-module")`,
-        expected: "this is a fake module"
+        expected: "this is a fake module",
       },
       "requiring a js package from a parent's node_modules dir": {
         code: `typeof require("acorn").parse`,
-        expected: "function"
-      }
+        expected: "function",
+      },
     }
   );
 
@@ -288,6 +288,37 @@ describe("run-on-server", () => {
         expect(await runOnServer(`require("./test/fixtures/fixture.js")`)).toBe(
           "this is fixtures/fixture.js"
         );
+      });
+    });
+  });
+
+  describe("id mappings", () => {
+    describe("when the server is not configured with id mappings", () => {
+      beforeEach(startServer);
+
+      it("errors if you try to make a request using an id", () => {
+        return expect(runOnServer({ id: "foo" })).rejects.toBeTruthy();
+      });
+    });
+
+    describe("when the server is configured with id mappings", () => {
+      beforeEach(() => {
+        return startServer({ idMappings: { returnArgs: "args" } });
+      });
+
+      it("errors if you try to make a request using a string", () => {
+        return expect(runOnServer(`args`, [1, 2, 3])).rejects.toBeTruthy();
+      });
+
+      it("errors if you try to make a request using a function", () => {
+        return expect(runOnServer((...args) => args)).rejects.toBeTruthy();
+      });
+
+      describe("when you make a request using an id", () => {
+        it("finds and executes the function referenced by that id", async () => {
+          const result = await runOnServer({ id: "returnArgs" }, [1, 2, 3]);
+          expect(result).toEqual([1, 2, 3]);
+        });
       });
     });
   });

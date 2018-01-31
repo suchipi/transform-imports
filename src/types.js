@@ -1,17 +1,26 @@
 /* @flow */
 type FunctionAPIRequest = {
+  codeId: void,
   functionString: string,
   codeString: void,
   args: ?Array<any>,
 };
 
 type StringAPIRequest = {
+  codeId: void,
   functionString: void,
   codeString: string,
   args?: ?Array<any>,
 };
 
-export type APIRequest = FunctionAPIRequest | StringAPIRequest;
+type IDAPIRequest = {
+  codeId: string,
+  functionString: void,
+  codeString: void,
+  args?: ?Array<any>,
+};
+
+export type APIRequest = FunctionAPIRequest | StringAPIRequest | IDAPIRequest;
 
 type SuccessfulAPIResponse = { success: true, result: any };
 type FailureAPIResponse = {
@@ -26,13 +35,16 @@ type FailureAPIResponse = {
 export type APIResponse = SuccessfulAPIResponse | FailureAPIResponse;
 
 export type RunOnServer = (
-  code: string | Function,
+  code: string | Function | { id: string },
   args: ?Array<any>
 ) => Promise<any>;
 
 export type ServerConfig = {
   requireFrom?: string,
+  idMappings?: IDMappings,
 };
+
+export type IDMappings = { [codeId: string]: string | Function };
 
 export type ModuleEnvironment = {
   exports: typeof exports,
