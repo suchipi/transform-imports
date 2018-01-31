@@ -33,3 +33,11 @@ export type RunOnServer = (
 export type ServerConfig = {
   requireFrom?: string,
 };
+
+export type ModuleEnvironment = {
+  exports: typeof exports,
+  require: typeof require,
+  module: typeof module,
+  __filename: string,
+  __dirname: string,
+};

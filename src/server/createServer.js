@@ -1,7 +1,7 @@
 /* @flow */
 const express = require("express");
 const bodyParser = require("body-parser");
-const executeCode = require("./executeCode");
+const handleRequest = require("./handleRequest");
 import type {
   $Application,
   // eslint-disable-next-line no-unused-vars
@@ -19,7 +19,7 @@ module.exports = function createServer(
   app.post(
     "/",
     (req: { /* :: ...$Request, */ body: APIRequest }, res: $Response) => {
-      executeCode(req.body, serverConfig)
+      handleRequest(req.body, serverConfig)
         .then((result) => {
           res.status(200).send(
             ({
