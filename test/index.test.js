@@ -332,4 +332,76 @@ describe("run-on-server", () => {
       });
     });
   });
+
+  describe("id mappings macro", () => {
+    const macroPath = path.resolve(__dirname, "..", "client.macro");
+    const outputPath = path.resolve(__dirname, "macroOutput.js");
+
+    const babel = require("babel-core");
+    const rimraf = require("rimraf");
+    const fs = require("fs");
+
+    const transform = (code) => {
+      rimraf.sync(outputPath);
+      const result = babel.transform(code, { plugins: ["macros"] });
+      const output = fs.readFileSync(outputPath, "utf-8");
+      rimraf.sync(outputPath);
+      return {
+        code: result.code,
+        output,
+      };
+    };
+
+    let mockConfig = { outputPath };
+    const configName = "runOnServer";
+
+    jest.mock("cosmiconfig", () => {
+      return function makeExplorer() {
+        return {
+          load: () => ({
+            config: {
+              [configName]: mockConfig,
+            },
+          }),
+        };
+      };
+    });
+
+    it("replaces the functions and strings in the client code with ids and outputs those functions and strings to the configured output file", () => {
+      const code = `
+        const createClient = require(${JSON.stringify(macroPath)});
+
+        const runOnServer = createClient("http://localhost:3000");
+
+        const returnArgsString = (args) => runOnServer("args", args);
+        const returnArgsFn = (args) => runOnServer((...args) => args, args);
+      `;
+      expect(transform(code)).toMatchSnapshot();
+    });
+
+    it("re-uses ids between runs if the function content did not change", () => {
+      const code1 = `
+        const createClient = require(${JSON.stringify(macroPath)});
+
+        const runOnServer = createClient("http://localhost:3000");
+
+        const returnArgsString = (args) => runOnServer("args", args);
+        const returnArgsFn = (args) => runOnServer((...args) => args, args);
+      `;
+      expect(transform(code1)).toMatchSnapshot();
+
+      const code2 = `
+        const createClient = require(${JSON.stringify(macroPath)});
+
+        const runOnServer = createClient("http://localhost:3000");
+
+        // This one shouldn't change id compared to code1
+        const returnArgsString = (args) => runOnServer("args", args);
+
+        // This one should change id compared to code1
+        const returnArgsFn = (args) => runOnServer(function() { return arguments; }, args);
+      `;
+      expect(transform(code2)).toMatchSnapshot();
+    });
+  });
 });
