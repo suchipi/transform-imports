@@ -5,24 +5,33 @@ import type { APIResponse, RunOnServer } from "../types";
 
 module.exports = function createClient(url: string): RunOnServer {
   return function runOnServer(
-    fnOrString: Function | string,
+    code: Function | string | { id: string },
     args: ?Array<any>
   ) {
     let body: string;
-    if (typeof fnOrString === "function") {
+    if (typeof code === "function") {
       body = JSON.stringify({
-        functionString: fnOrString.toString(),
+        functionString: code.toString(),
         args,
       });
-    } else if (typeof fnOrString === "string") {
+    } else if (typeof code === "string") {
       body = JSON.stringify({
-        codeString: fnOrString,
+        codeString: code,
+        args,
+      });
+    } else if (
+      typeof code === "object" &&
+      code != null &&
+      typeof code.id === "string"
+    ) {
+      body = JSON.stringify({
+        codeId: code.id,
         args,
       });
     } else {
       throw new Error(
-        "Expected either a function or string, but received: " +
-          typeof fnOrString
+        "Expected either a function, string, or code id, but received: " +
+          typeof code
       );
     }
 

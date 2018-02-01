@@ -9,7 +9,8 @@ module.exports = function handleRequest(
   serverConfig: ?ServerConfig
 ): Promise<mixed> {
   return new Promise((resolve, reject) => {
-    const { code, args } = parseRequest(requestBody);
+    const idMappings = serverConfig && serverConfig.idMappings;
+    const { code, args } = parseRequest(requestBody, idMappings);
     const runCode = compileCode(code, args);
 
     const requireFrom = serverConfig && serverConfig.requireFrom;

@@ -303,7 +303,12 @@ describe("run-on-server", () => {
 
     describe("when the server is configured with id mappings", () => {
       beforeEach(() => {
-        return startServer({ idMappings: { returnArgs: "args" } });
+        return startServer({
+          idMappings: {
+            returnArgs: "args",
+            returnArgsFn: (...args) => args,
+          },
+        });
       });
 
       it("errors if you try to make a request using a string", () => {
@@ -315,8 +320,13 @@ describe("run-on-server", () => {
       });
 
       describe("when you make a request using an id", () => {
-        it("finds and executes the function referenced by that id", async () => {
+        it("finds and executes the function referenced by that id (string)", async () => {
           const result = await runOnServer({ id: "returnArgs" }, [1, 2, 3]);
+          expect(result).toEqual([1, 2, 3]);
+        });
+
+        it("finds and executes the function referenced by that id (function)", async () => {
+          const result = await runOnServer({ id: "returnArgsFn" }, [1, 2, 3]);
           expect(result).toEqual([1, 2, 3]);
         });
       });
