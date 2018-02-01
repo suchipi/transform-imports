@@ -1,5 +1,33 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`run-on-server id mappings macro error cases fails when referencing an in-scope function declaration 1`] = `"unknown: Found a situation where runOnServer was called and the first argument was not a template literal, string literal, arrow function expression, or function expression. These are the only forms supported by the run-on-server macro."`;
+
+exports[`run-on-server id mappings macro error cases when passing a template literal with expressions in it to runOnServer 1`] = `"unknown: Found a template literal with embedded expressions being passed to runOnServer. This is not supported. Instead of doing this, use the \`args\` argument within the template literal string to reference the optional array that can be passed as the second argument to runOnServer."`;
+
+exports[`run-on-server id mappings macro error cases when passing an expression other than a string literal, template literal, arrow function expression, or function expression to runOnServer 1`] = `"unknown: Found a situation where runOnServer was called and the first argument was not a template literal, string literal, arrow function expression, or function expression. These are the only forms supported by the run-on-server macro."`;
+
+exports[`run-on-server id mappings macro error cases when runOnServer is called with no arguments 1`] = `"unknown: The runOnServer function returned by createClient was called without any arguments. This is not a valid use of the library."`;
+
+exports[`run-on-server id mappings macro error cases when runOnServer is not saved to a variable 1`] = `
+"unknown: Found a situation where the result of calling createClient was not saved to a variable. Saving the result of createClient to a variable is the only suported way to use the run-on-server macro. For example:
+  const runOnServer = createClient(\\"http://somewhere:3000\\")
+"
+`;
+
+exports[`run-on-server id mappings macro error cases when runOnServer is referenced as a value instead of called directly (function.call variant) 1`] = `"unknown: The runOnServer function returned by createClient was referenced in a way where it wasn't a direct variable call. For instance, you might be putting runOnServer in an object literal, or trying to use runOnServer.call or runOnServer.apply. This is not supported- the only form of referencing runOnServer supported by the run-on-server macro is calling it directly, eg runOnServer(...)."`;
+
+exports[`run-on-server id mappings macro error cases when runOnServer is referenced as a value instead of called directly 1`] = `"unknown: The runOnServer function returned by createClient was referenced in a way where it wasn't a direct variable call. For instance, you might be putting runOnServer in an object literal, or trying to use runOnServer.call or runOnServer.apply. This is not supported- the only form of referencing runOnServer supported by the run-on-server macro is calling it directly, eg runOnServer(...)."`;
+
+exports[`run-on-server id mappings macro error cases when runOnServer is saved to a variable but the id of the declarator is not an identifier 1`] = `
+"unknown: Found a situation where the result of calling createClient was saved to a variable, but that variable was created in an unexpected way. The only variable declaration forms supported by the run-on-server macro are:
+  const runOnServer = createClient(\\"http://somewhere:3000\\");
+OR
+  var runOnServer = createClient(\\"http://somewhere:3000\\");
+OR
+  let runOnServer = createClient(\\"http://somewhere:3000\\");
+"
+`;
+
 exports[`run-on-server id mappings macro re-uses ids between runs if the function content did not change 1`] = `
 Object {
   "code": "var createClient = require(\\"run-on-server/client\\");

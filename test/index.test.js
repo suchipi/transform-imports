@@ -344,7 +344,12 @@ describe("run-on-server", () => {
     const transform = (code) => {
       rimraf.sync(outputPath);
       const result = babel.transform(code, { plugins: ["macros"] });
-      const output = fs.readFileSync(outputPath, "utf-8");
+      let output;
+      try {
+        output = fs.readFileSync(outputPath, "utf-8");
+      } catch (err) {
+        output = "(File does not exist)";
+      }
       rimraf.sync(outputPath);
       return {
         code: result.code,
@@ -402,6 +407,154 @@ describe("run-on-server", () => {
         const returnArgsFn = (args) => runOnServer(function() { return arguments; }, args);
       `;
       expect(transform(code2)).toMatchSnapshot();
+    });
+
+    it("doesn't blow up if you import createClient but don't use it", () => {
+      const code = `
+        const createClient = require(${JSON.stringify(macroPath)});
+      `;
+      expect(() => transform(code)).not.toThrowError();
+    });
+
+    it("doesn't blow up if you make a runOnServer function but don't use it", () => {
+      const code = `
+        const createClient = require(${JSON.stringify(macroPath)});
+
+        const runOnServer = createClient("http://localhost:3000");
+      `;
+      expect(() => transform(code)).not.toThrowError();
+    });
+
+    describe("error cases", () => {
+      it("when runOnServer is not saved to a variable", () => {
+        const code = `
+          const createClient = require(${JSON.stringify(macroPath)});
+
+          createClient("http://localhost:3000")("args", [1, 2, 3]).then((result) => {
+            console.log(result);
+          });
+        `;
+
+        expect(() => transform(code)).toThrowErrorMatchingSnapshot();
+      });
+
+      it("when runOnServer is saved to a variable but the id of the declarator is not an identifier", () => {
+        const code = `
+          const createClient = require(${JSON.stringify(macroPath)});
+
+          const { call, apply } = createClient("http://localhost:3000");
+          call(null, "args", [1, 2, 3]);
+        `;
+
+        expect(() => transform(code)).toThrowErrorMatchingSnapshot();
+      });
+
+      it("when runOnServer is referenced as a value instead of called directly", () => {
+        const code = `
+          const createClient = require(${JSON.stringify(macroPath)});
+
+          const runOnServer = createClient("http://localhost:3000");
+          runOnServer;
+        `;
+
+        expect(() => transform(code)).toThrowErrorMatchingSnapshot();
+      });
+
+      it("when runOnServer is referenced as a value instead of called directly (function.call variant)", () => {
+        const code = `
+          const createClient = require(${JSON.stringify(macroPath)});
+
+          const runOnServer = createClient("http://localhost:3000");
+          runOnServer.call(null, "args", [1, 2, 3]);
+        `;
+
+        expect(() => transform(code)).toThrowErrorMatchingSnapshot();
+      });
+
+      it("when runOnServer is called with no arguments", () => {
+        const code = `
+          const createClient = require(${JSON.stringify(macroPath)});
+
+          const runOnServer = createClient("http://localhost:3000");
+          runOnServer();
+        `;
+
+        expect(() => transform(code)).toThrowErrorMatchingSnapshot();
+      });
+
+      it("when passing a template literal with expressions in it to runOnServer", () => {
+        const code = `
+          const createClient = require(${JSON.stringify(macroPath)});
+
+          const runOnServer = createClient("http://localhost:3000");
+          runOnServer(\`\${process.env.GLOBAL_NAME} = foo\`);
+        `;
+
+        expect(() => transform(code)).toThrowErrorMatchingSnapshot();
+      });
+
+      it("when passing an expression other than a string literal, template literal, arrow function expression, or function expression to runOnServer", () => {
+        const codePrelude = `
+          const createClient = require(${JSON.stringify(macroPath)});
+
+          const runOnServer = createClient("http://localhost:3000");
+        `;
+
+        const stringLiteral =
+          codePrelude +
+          `
+          runOnServer("foo");
+        `;
+        const templateLiteral =
+          codePrelude +
+          `
+          runOnServer(\`foo\`);
+        `;
+        const arrowFunctionExpression =
+          codePrelude +
+          `
+          runOnServer(() => foo);
+        `;
+        const functionExpression =
+          codePrelude +
+          `
+          runOnServer(function() { return foo; });
+        `;
+
+        [
+          stringLiteral,
+          templateLiteral,
+          arrowFunctionExpression,
+          functionExpression,
+        ].forEach((code) => {
+          expect(() => transform(code)).not.toThrowError();
+        });
+
+        const somethingElse =
+          codePrelude +
+          `
+          runOnServer(2 + 2);
+        `;
+
+        expect(() => transform(somethingElse)).toThrowErrorMatchingSnapshot();
+      });
+
+      it("fails when referencing an in-scope function declaration", () => {
+        // TODO: this shouldn't fail
+        const code = `
+          const createClient = require(${JSON.stringify(macroPath)});
+
+          const runOnServer = createClient("http://localhost:3000");
+
+          function doTheThing() {
+            return 5;
+          }
+
+          runOnServer(doTheThing);
+        `;
+
+        expect(() => transform(code)).toThrowErrorMatchingSnapshot();
+      });
     });
   });
 });

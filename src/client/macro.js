@@ -19,7 +19,6 @@ function getSourceForNode(node, state) {
 }
 
 function runOnServerMacro({ references, state, babel, config }) {
-  const filename = state.file.opts.filename;
   const outputPath =
     config.outputPath ||
     path.join(process.cwd(), "run-on-server-id-mappings.js");
@@ -53,8 +52,9 @@ function runOnServerMacro({ references, state, babel, config }) {
     if (declarator == null) {
       throw new MacroError(
         "Found a situation where the result of calling createClient was not " +
-          "saved to a variable. This is the only suported way to use the " +
-          "run-on-server macro. For example:\n" +
+          "saved to a variable. Saving the result of createClient to a " +
+          "variable is the only suported way to use the run-on-server macro. " +
+          "For example:\n" +
           `  const runOnServer = createClient("http://somewhere:3000")\n`
       );
     }
@@ -66,9 +66,9 @@ function runOnServerMacro({ references, state, babel, config }) {
           "saved to a variable, but that variable was created in an unexpected " +
           "way. The only variable declaration forms supported by the " +
           "run-on-server macro are:\n" +
-          `  const runOnServer = createClient("http://somewhere:3000");\nOR\n`,
-        `  var runOnServer = createClient("http://somewhere:3000");\nOR\n`,
-        `  let runOnServer = createClient("http://somewhere:3000");\n`
+          `  const runOnServer = createClient("http://somewhere:3000");\nOR\n` +
+          `  var runOnServer = createClient("http://somewhere:3000");\nOR\n` +
+          `  let runOnServer = createClient("http://somewhere:3000");\n`
       );
     }
 
@@ -85,7 +85,7 @@ function runOnServerMacro({ references, state, babel, config }) {
           "The runOnServer function returned by createClient was referenced " +
             "in a way where it wasn't a direct variable call. For instance, " +
             "you might be putting runOnServer in an object literal, or " +
-            "Trying to use runOnServer.call or runOnServer.apply. This is " +
+            "trying to use runOnServer.call or runOnServer.apply. This is " +
             "not supported- the only form of referencing runOnServer " +
             "supported by the run-on-server macro is calling it directly, eg " +
             "runOnServer(...)."
@@ -105,10 +105,10 @@ function runOnServerMacro({ references, state, babel, config }) {
         if (code.node.expressions.length > 0) {
           throw new MacroError(
             "Found a template literal with embedded expressions being passed " +
-              `to runOnServer in file '${filename}'. This is not supported. ` +
-              "Instead of doing this, use the `args` argument within the " +
-              "template literal string to reference the optional array that " +
-              "can be passed as the second argument to runOnServer."
+              "to runOnServer. This is not supported. Instead of doing this, " +
+              "use the `args` argument within the template literal string to " +
+              "reference the optional array that can be passed as the second " +
+              "argument to runOnServer."
           );
         }
       }
