@@ -1,5 +1,6 @@
 const path = require("path");
 const fs = require("fs");
+const dedent = require("dedent");
 const { createMacro, MacroError } = require("babel-plugin-macros");
 const t = require("babel-types");
 const generate = require("babel-generator").default;
@@ -20,7 +21,7 @@ function getSourceForNode(node, state) {
 
 function runOnServerMacro({ references, state, babel, config }) {
   const outputPath =
-    config.outputPath ||
+    (config && config.outputPath) ||
     path.join(process.cwd(), "run-on-server-id-mappings.js");
 
   const outputContent = t.expressionStatement(
@@ -50,22 +51,22 @@ function runOnServerMacro({ references, state, babel, config }) {
     );
 
     if (declarator == null) {
-      throw new MacroError(
-        "Found a situation where the result of calling createClient was not " +
-          "saved to a variable. Saving the result of createClient to a " +
-          "variable is the only suported way to use the run-on-server macro. " +
-          "For example:\n" +
-          `  const runOnServer = createClient("http://somewhere:3000")\n`
-      );
+      throw new MacroError(dedent`
+        Found a situation where the result of calling createClient was not saved
+        to a variable. Saving the result of createClient to a variable is the
+        only suported way to use the run-on-server macro.
+        For example:
+          const runOnServer = createClient("http://somewhere:3000")
+      `);
     }
 
     const id = declarator.get("id");
     if (!id.isIdentifier()) {
       throw new MacroError(
         "Found a situation where the result of calling createClient was " +
-          "saved to a variable, but that variable was created in an unexpected " +
-          "way. The only variable declaration forms supported by the " +
-          "run-on-server macro are:\n" +
+          "saved to a variable, but that variable was created in an " +
+          "unexpected way. The only variable declaration forms supported by " +
+          "the run-on-server macro are:\n" +
           `  const runOnServer = createClient("http://somewhere:3000");\nOR\n` +
           `  var runOnServer = createClient("http://somewhere:3000");\nOR\n` +
           `  let runOnServer = createClient("http://somewhere:3000");\n`
@@ -80,6 +81,7 @@ function runOnServerMacro({ references, state, babel, config }) {
 
     const runOnServerPaths = bindings.referencePaths;
     runOnServerPaths.forEach((referencePath) => {
+      // Handle module.exports = runOnServer, { foo: runOnServer }, etc.
       if (!referencePath.parentPath.isCallExpression()) {
         throw new MacroError(
           "The runOnServer function returned by createClient was referenced " +
@@ -93,7 +95,8 @@ function runOnServerMacro({ references, state, babel, config }) {
       }
 
       const callExpression = referencePath.parentPath;
-      let code = callExpression.get("arguments")[0];
+      const code = callExpression.get("arguments")[0];
+      // Handle runOnServer();
       if (code == null) {
         throw new MacroError(
           "The runOnServer function returned by createClient was called " +
@@ -101,34 +104,93 @@ function runOnServerMacro({ references, state, babel, config }) {
         );
       }
 
-      if (code.isTemplateLiteral()) {
-        if (code.node.expressions.length > 0) {
-          throw new MacroError(
-            "Found a template literal with embedded expressions being passed " +
-              "to runOnServer. This is not supported. Instead of doing this, " +
-              "use the `args` argument within the template literal string to " +
-              "reference the optional array that can be passed as the second " +
-              "argument to runOnServer."
-          );
-        }
-      }
-
+      // Handle irregular cases like runOnServer(2 + 2)
       if (
         !(
           code.isTemplateLiteral() ||
           code.isStringLiteral() ||
           code.isArrowFunctionExpression() ||
-          code.isFunctionExpression()
+          code.isFunctionExpression() ||
+          code.isIdentifier()
         )
       ) {
-        // TODO: If it's an identifier and that identifier refers to a function
-        // declared in the same file, handle it properly.
         throw new MacroError(
           "Found a situation where runOnServer was called and the first " +
             "argument was not a template literal, string literal, arrow " +
-            "function expression, or function expression. These are the only " +
-            "forms supported by the run-on-server macro."
+            "function expression, function expression, or identifier " +
+            "referring to one of those. These are the only forms supported " +
+            "by the run-on-server macro."
         );
+      }
+
+      // Handle eg. runOnServer(`${foo}`)
+      if (code.isTemplateLiteral() && code.node.expressions.length > 0) {
+        throw new MacroError(
+          "Found a template literal with embedded expressions being passed " +
+            "to runOnServer. This is not supported. Instead of doing this, " +
+            "use the `args` argument within the template literal string to " +
+            "reference the optional array that can be passed as the second " +
+            "argument to runOnServer."
+        );
+      }
+
+      if (code.isIdentifier() && code.scope.bindings[code.node.name]) {
+        const binding = code.scope.bindings[code.node.name];
+        // Handle eg:
+        // let foo = function(one) {};
+        // foo = function(two) {};
+        // runOnServer(foo);
+        if (!binding.constant) {
+          throw new Error(
+            "Attempted to pass a variable into runOnServer, but the " +
+              "variable being passed in was reassigned at some point in " +
+              "the program, which the runOnServer macro cannot handle."
+          );
+        }
+
+        // Handle eg:
+        // function foo() {}
+        // runOnServer(foo)
+        if (binding.path.isFunctionDeclaration()) {
+          const functionDeclaration = binding.path.node;
+          const functionExpression = t.functionExpression(
+            functionDeclaration.id,
+            functionDeclaration.params,
+            functionDeclaration.body,
+            functionDeclaration.generator,
+            functionDeclaration.async
+          );
+
+          const source = getSourceForNode(functionDeclaration, state);
+          const codeId = md5(source);
+          addMapping(codeId, JSON.parse(JSON.stringify(functionExpression)));
+          code.replaceWith(
+            t.objectExpression([
+              t.objectProperty(t.identifier("id"), t.stringLiteral(codeId)),
+            ])
+          );
+
+          return;
+        } else if (
+          binding.path.isVariableDeclarator() &&
+          binding.path.node.init != null
+        ) {
+          if (
+            code.isTemplateLiteral() ||
+            code.isStringLiteral() ||
+            code.isArrowFunctionExpression() ||
+            code.isFunctionExpression()
+          ) {
+            // TODO
+          }
+        } else {
+          throw new MacroError(
+            "Found a situation where runOnServer was called with a " +
+              "variable as the first argument, and that variable was not a " +
+              "function or string defined in the same file. This is not " +
+              "supported by the runOnServer macro."
+          );
+        }
       }
 
       const source = getSourceForNode(code.node, state);
@@ -162,7 +224,8 @@ function runOnServerMacro({ references, state, babel, config }) {
   }
 
   const comment = [
-    `\nThis file was generated by the run-on-server babel macro. It should not`,
+    ``,
+    `This file was generated by the run-on-server babel macro. It should not`,
     `be edited by hand.`,
     ``,
     `If you want to output this file to a different location, you can`,
@@ -174,7 +237,8 @@ function runOnServerMacro({ references, state, babel, config }) {
     `  runOnServer: {`,
     `    outputPath: path.resolve(__dirname, "somewhere", "else.js")`,
     `  }`,
-    `};\n`,
+    `};`,
+    ``,
   ].join("\n");
 
   const output = generate(t.program([outputContent]), {

@@ -1,6 +1,7 @@
 /* @flow */
 const express = require("express");
 const bodyParser = require("body-parser");
+const stripAnsi = require("strip-ansi");
 const handleRequest = require("./handleRequest");
 import type {
   $Application,
@@ -33,9 +34,9 @@ module.exports = function createServer(
             ({
               success: false,
               err: {
-                name: err.name,
-                message: err.message,
-                stack: err.stack,
+                name: stripAnsi(err.name),
+                message: stripAnsi(err.message),
+                stack: stripAnsi(err.stack),
               },
             }: APIResponse)
           );

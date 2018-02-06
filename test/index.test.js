@@ -1,5 +1,6 @@
 const cases = require("jest-in-case");
 const path = require("path");
+const dedent = require("dedent");
 const createServer = require("../server");
 const createClient = require("../client");
 
@@ -358,203 +359,226 @@ describe("run-on-server", () => {
     };
 
     let mockConfig = { outputPath };
-    const configName = "runOnServer";
 
     jest.mock("cosmiconfig", () => {
       return function makeExplorer() {
         return {
           load: () => ({
             config: {
-              [configName]: mockConfig,
+              runOnServer: mockConfig,
             },
           }),
         };
       };
     });
 
-    it("replaces the functions and strings in the client code with ids and outputs those functions and strings to the configured output file", () => {
-      const code = `
-        const createClient = require(${JSON.stringify(macroPath)});
+    cases(
+      "replaces the functions and strings in the client code with ids and outputs those functions and strings to the configured output file",
+      ({ code, fullCode }) => {
+        const codeToTransform =
+          (fullCode && dedent(fullCode)) ||
+          dedent`
+            const createClient = require(${JSON.stringify(macroPath)});
+            const runOnServer = createClient("http://localhost:3000");
+          ` +
+            "\n" +
+            dedent(code);
+        let result;
+        expect(() => {
+          result = transform(codeToTransform);
+        }).not.toThrowError();
+        expect(
+          "\n#INPUT\n" +
+            dedent(codeToTransform) +
+            "\n\n#OUTPUT - CODE\n" +
+            dedent(result.code) +
+            "\n\n#OUTPUT - ID MAPPINGS\n" +
+            dedent(result.output) +
+            "\n"
+        ).toMatchSnapshot();
+      },
+      {
+        "string literal": {
+          code: `const result = runOnServer("args", [1, 2, 3]);`,
+        },
+        "simple template literal": {
+          code: `const result = runOnServer(\`args\`, [1, 2, 3]);`,
+        },
+        "function expression": {
+          code: `const result = runOnServer(function() { return 5; });`,
+        },
+        "arrow function expression": {
+          code: `const result = runOnServer(() => 5);`,
+        },
+        "arrow function expression (with body)": {
+          code: `const result = runOnServer(() => { return 5 });`,
+        },
+        "function as identifier from function declaration": {
+          code: `
+            function foo() { return 5; }
 
-        const runOnServer = createClient("http://localhost:3000");
+            const result = runOnServer(foo);
+          `,
+        },
+        "function expression as identifier from variable declaration (var)": {
+          code: `
+            var foo = function foo() { return 5; };
 
-        const returnArgsString = (args) => runOnServer("args", args);
-        const returnArgsFn = (args) => runOnServer((...args) => args, args);
-      `;
-      expect(transform(code)).toMatchSnapshot();
-    });
+            const result = runOnServer(foo);
+          `,
+        },
+        "function expression as identifier from variable declaration (let)": {
+          code: `
+            let foo = function foo() { return 5; };
 
-    it("re-uses ids between runs if the function content did not change", () => {
-      const code1 = `
-        const createClient = require(${JSON.stringify(macroPath)});
+            const result = runOnServer(foo);
+          `,
+        },
+        "function expression as identifier from variable declaration (const)": {
+          code: `
+            const foo = function foo() { return 5; };
 
-        const runOnServer = createClient("http://localhost:3000");
+            const result = runOnServer(foo);
+          `,
+        },
+        "arrow function expression as identifier from variable declaration (var)": {
+          code: `
+            var foo = () => { return 5; };
 
-        const returnArgsString = (args) => runOnServer("args", args);
-        const returnArgsFn = (args) => runOnServer((...args) => args, args);
-      `;
-      expect(transform(code1)).toMatchSnapshot();
+            const result = runOnServer(foo);
+          `,
+        },
+        "arrow function expression as identifier from variable declaration (let)": {
+          code: `
+            let foo = () => { return 5; };
 
-      const code2 = `
-        const createClient = require(${JSON.stringify(macroPath)});
+            const result = runOnServer(foo);
+          `,
+        },
+        "arrow function expression as identifier from variable declaration (const)": {
+          code: `
+            const foo = () => { return 5; };
 
-        const runOnServer = createClient("http://localhost:3000");
+            const result = runOnServer(foo);
+          `,
+        },
+        "string literal as identifier from variable declaration (var)": {
+          code: `
+            var foo = "args";
 
-        // This one shouldn't change id compared to code1
-        const returnArgsString = (args) => runOnServer("args", args);
+            const result = runOnServer(foo, [1, 2, 3]);
+          `,
+        },
+        "string literal as identifier from variable declaration (let)": {
+          code: `
+            let foo = "args";
 
-        // This one should change id compared to code1
-        const returnArgsFn = (args) => runOnServer(function() { return arguments; }, args);
-      `;
-      expect(transform(code2)).toMatchSnapshot();
-    });
+            const result = runOnServer(foo, [1, 2, 3]);
+          `,
+        },
+        "string literal as identifier from variable declaration (const)": {
+          code: `
+            const foo = "args";
 
-    it("doesn't blow up if you import createClient but don't use it", () => {
-      const code = `
-        const createClient = require(${JSON.stringify(macroPath)});
-      `;
-      expect(() => transform(code)).not.toThrowError();
-    });
+            const result = runOnServer(foo, [1, 2, 3]);
+          `,
+        },
+        "template literal as identifier from variable declaration (var)": {
+          code: `
+            var foo = \`args\`;
 
-    it("doesn't blow up if you make a runOnServer function but don't use it", () => {
-      const code = `
-        const createClient = require(${JSON.stringify(macroPath)});
+            const result = runOnServer(foo, [1, 2, 3]);
+          `,
+        },
+        "template literal as identifier from variable declaration (let)": {
+          code: `
+            let foo = \`args\`;
 
-        const runOnServer = createClient("http://localhost:3000");
-      `;
-      expect(() => transform(code)).not.toThrowError();
-    });
+            const result = runOnServer(foo, [1, 2, 3]);
+          `,
+        },
+        "template literal as identifier from variable declaration (const)": {
+          code: `
+            const foo = \`args\`;
 
-    describe("error cases", () => {
-      it("when runOnServer is not saved to a variable", () => {
-        const code = `
+            const result = runOnServer(foo, [1, 2, 3]);
+          `,
+        },
+        "if you import createClient but don't use it": {
+          fullCode: `
+            const createClient = require(${JSON.stringify(macroPath)});
+          `,
+        },
+        "if you make a runOnServer function but don't use it": {
+          fullCode: `
+            const createClient = require(${JSON.stringify(macroPath)});
+            const runOnServer = createClient("http://localhost:3000");
+          `,
+        },
+      }
+    );
+
+    cases(
+      "error cases",
+      ({ code, fullCode }) => {
+        const codeToTransform =
+          (fullCode && dedent(fullCode)) ||
+          dedent`
+            const createClient = require(${JSON.stringify(macroPath)});
+            const runOnServer = createClient("http://localhost:3000");
+          ` +
+            "\n" +
+            dedent(code);
+
+        expect(() => {
+          transform(codeToTransform);
+        }).toThrowError();
+        let error;
+        try {
+          transform(codeToTransform);
+        } catch (err) {
+          error = err;
+        }
+
+        expect(
+          "\n#INPUT\n" + dedent(codeToTransform) + "\n\n#ERROR\n" + error + "\n"
+        ).toMatchSnapshot();
+      },
+      {
+        "when runOnServer is not saved to a variable": {
+          fullCode: `
           const createClient = require(${JSON.stringify(macroPath)});
-
-          createClient("http://localhost:3000")("args", [1, 2, 3]).then((result) => {
-            console.log(result);
-          });
-        `;
-
-        expect(() => transform(code)).toThrowErrorMatchingSnapshot();
-      });
-
-      it("when runOnServer is saved to a variable but the id of the declarator is not an identifier", () => {
-        const code = `
+          createClient("http://localhost:3000")("args", [1, 2, 3]);
+        `,
+        },
+        "when runOnServer is saved to a variable but the id of the declarator is not an identifier": {
+          fullCode: `
           const createClient = require(${JSON.stringify(macroPath)});
-
           const { call, apply } = createClient("http://localhost:3000");
           call(null, "args", [1, 2, 3]);
-        `;
-
-        expect(() => transform(code)).toThrowErrorMatchingSnapshot();
-      });
-
-      it("when runOnServer is referenced as a value instead of called directly", () => {
-        const code = `
-          const createClient = require(${JSON.stringify(macroPath)});
-
-          const runOnServer = createClient("http://localhost:3000");
-          runOnServer;
-        `;
-
-        expect(() => transform(code)).toThrowErrorMatchingSnapshot();
-      });
-
-      it("when runOnServer is referenced as a value instead of called directly (function.call variant)", () => {
-        const code = `
-          const createClient = require(${JSON.stringify(macroPath)});
-
-          const runOnServer = createClient("http://localhost:3000");
-          runOnServer.call(null, "args", [1, 2, 3]);
-        `;
-
-        expect(() => transform(code)).toThrowErrorMatchingSnapshot();
-      });
-
-      it("when runOnServer is called with no arguments", () => {
-        const code = `
-          const createClient = require(${JSON.stringify(macroPath)});
-
-          const runOnServer = createClient("http://localhost:3000");
-          runOnServer();
-        `;
-
-        expect(() => transform(code)).toThrowErrorMatchingSnapshot();
-      });
-
-      it("when passing a template literal with expressions in it to runOnServer", () => {
-        const code = `
-          const createClient = require(${JSON.stringify(macroPath)});
-
-          const runOnServer = createClient("http://localhost:3000");
-          runOnServer(\`\${process.env.GLOBAL_NAME} = foo\`);
-        `;
-
-        expect(() => transform(code)).toThrowErrorMatchingSnapshot();
-      });
-
-      it("when passing an expression other than a string literal, template literal, arrow function expression, or function expression to runOnServer", () => {
-        const codePrelude = `
-          const createClient = require(${JSON.stringify(macroPath)});
-
-          const runOnServer = createClient("http://localhost:3000");
-        `;
-
-        const stringLiteral =
-          codePrelude +
-          `
-          runOnServer("foo");
-        `;
-        const templateLiteral =
-          codePrelude +
-          `
-          runOnServer(\`foo\`);
-        `;
-        const arrowFunctionExpression =
-          codePrelude +
-          `
-          runOnServer(() => foo);
-        `;
-        const functionExpression =
-          codePrelude +
-          `
-          runOnServer(function() { return foo; });
-        `;
-
-        [
-          stringLiteral,
-          templateLiteral,
-          arrowFunctionExpression,
-          functionExpression,
-        ].forEach((code) => {
-          expect(() => transform(code)).not.toThrowError();
-        });
-
-        const somethingElse =
-          codePrelude +
-          `
-          runOnServer(2 + 2);
-        `;
-
-        expect(() => transform(somethingElse)).toThrowErrorMatchingSnapshot();
-      });
-
-      it("fails when referencing an in-scope function declaration", () => {
-        // TODO: this shouldn't fail
-        const code = `
-          const createClient = require(${JSON.stringify(macroPath)});
-
-          const runOnServer = createClient("http://localhost:3000");
-
-          function doTheThing() {
-            return 5;
-          }
-
-          runOnServer(doTheThing);
-        `;
-
-        expect(() => transform(code)).toThrowErrorMatchingSnapshot();
-      });
-    });
+        `,
+        },
+        "when runOnServer is references as a value instead of called directly": {
+          code: `module.exports = runOnServer;`,
+        },
+        "when trying to use runOnServer.call": {
+          code: `runOnServer.call(null, "foo", [1, 2, 3]);`,
+        },
+        "when trying to use runOnServer.apply": {
+          code: `runOnServer.apply(null, ["foo", [1, 2, 3]]);`,
+        },
+        "when runOnServer is called with no arguments": {
+          code: `runOnServer();`,
+        },
+        "when passing a template literal with expressions in it to runOnServer": {
+          code: `
+          runOnServer(\`foo = \${process.env.NODE_ENV}\`);
+        `,
+        },
+        "when passing an unsupported expression to runOnServer": {
+          code: `runOnServer(2 + 2);`,
+        },
+      }
+    );
   });
 });
