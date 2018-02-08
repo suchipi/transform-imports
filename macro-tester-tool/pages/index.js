@@ -113,15 +113,31 @@ export default class IndexPage extends React.Component<{||}, State> {
           >
             {error ? (
               <ErrorDisplay
-                style={{ flexBasis: "100%", padding: "1em" }}
+                style={{
+                  flexBasis: "100%",
+                  padding: "1em",
+                  overflow: "auto",
+                }}
                 error={error}
               />
             ) : (
               <React.Fragment>
-                <OutputDisplay style={{ flexBasis: "100%", padding: "1em" }}>
+                <OutputDisplay
+                  style={{
+                    flexBasis: "100%",
+                    padding: "1em",
+                    overflow: "auto",
+                  }}
+                >
                   {outputCode}
                 </OutputDisplay>
-                <OutputDisplay style={{ flexBasis: "100%", padding: "1em" }}>
+                <OutputDisplay
+                  style={{
+                    flexBasis: "100%",
+                    padding: "1em",
+                    overflow: "auto",
+                  }}
+                >
                   {outputIdMappings}
                 </OutputDisplay>
               </React.Fragment>

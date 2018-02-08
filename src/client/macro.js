@@ -1,23 +1,15 @@
 const path = require("path");
 const fs = require("fs");
-const dedent = require("dedent");
+const { oneLine, stripIndent } = require("common-tags");
 const { createMacro, MacroError } = require("babel-plugin-macros");
 const t = require("babel-types");
 const generate = require("babel-generator").default;
 const TextBuffer = require("text-buffer");
 const md5 = require("md5");
+const codeFrame = require("babel-code-frame");
+const supportsColor = require("supports-color");
 
 module.exports = createMacro(runOnServerMacro, { configName: "runOnServer" });
-
-function getSourceForNode(node, state) {
-  const { start, end } = node.loc;
-  const range = new TextBuffer.Range(
-    [start.line - 1, start.column],
-    [end.line - 1, end.column]
-  );
-  const source = state.file.code;
-  return new TextBuffer(source).getTextInRange(range);
-}
 
 function runOnServerMacro({ references, state, babel, config }) {
   const outputPath =
@@ -32,44 +24,93 @@ function runOnServerMacro({ references, state, babel, config }) {
     )
   );
 
-  const addMapping = (id, expressionNode) => {
+  const addedMappings = {};
+  function addMapping(id, expressionNode) {
+    if (addedMappings[id]) {
+      return;
+    }
     const newProperty = t.objectProperty(t.stringLiteral(id), expressionNode);
     outputContent.expression.right.properties.push(newProperty);
-  };
+    addedMappings[id] = true;
+  }
+
+  function getSourceForNode(node) {
+    const { start, end } = node.loc;
+    const range = new TextBuffer.Range(
+      [start.line - 1, start.column],
+      [end.line - 1, end.column]
+    );
+    const source = state.file.code;
+    return new TextBuffer(source).getTextInRange(range);
+  }
+
+  function getCodeFrame(node) {
+    return codeFrame(
+      state.file.code,
+      node.loc.start.line,
+      node.loc.start.column,
+      {
+        highlightCode: Boolean(supportsColor.stderr),
+      }
+    );
+  }
 
   const referenceNames = {};
 
-  // Note: `references` are references to createClient, not runOnServer. We need
+  // `references` are references to createClient, not runOnServer. We need
   // to find references to runOnServer.
   references.default.forEach((createClientReference) => {
+    let createClientFunctionName = "createClient";
     if (createClientReference.isIdentifier()) {
-      referenceNames[createClientReference.node.name] = true;
+      createClientFunctionName = createClientReference.node.name;
+      referenceNames[createClientFunctionName] = true;
     }
 
-    const declarator = createClientReference.findParent((path) =>
-      path.isVariableDeclarator()
-    );
-
-    if (declarator == null) {
-      throw new MacroError(dedent`
-        Found a situation where the result of calling createClient was not saved
-        to a variable. Saving the result of createClient to a variable is the
-        only suported way to use the run-on-server macro.
-        For example:
-          const runOnServer = createClient("http://somewhere:3000")
-      `);
+    // createClient Identifier -> CallExpression -> VariableDeclarator
+    const declarator = createClientReference.parentPath.parentPath;
+    if (!declarator.isVariableDeclarator()) {
+      throw new MacroError(
+        oneLine`
+          The result of calling ${createClientFunctionName} was not saved to a
+          variable.
+        ` +
+          "\n" +
+          getCodeFrame(createClientReference.node) +
+          "\n" +
+          oneLine`
+            Saving the result of ${createClientFunctionName} to a variable
+            is the only supported way to use the run-on-server macro.
+          ` +
+          "\n" +
+          stripIndent`
+            For example, try:
+          ` +
+          `\n  const runOnServer = ${createClientFunctionName}("http://somewhere:3000");`
+      );
     }
 
     const id = declarator.get("id");
     if (!id.isIdentifier()) {
       throw new MacroError(
-        "Found a situation where the result of calling createClient was " +
-          "saved to a variable, but that variable was created in an " +
-          "unexpected way. The only variable declaration forms supported by " +
-          "the run-on-server macro are:\n" +
-          `  const runOnServer = createClient("http://somewhere:3000");\nOR\n` +
-          `  var runOnServer = createClient("http://somewhere:3000");\nOR\n` +
-          `  let runOnServer = createClient("http://somewhere:3000");\n`
+        oneLine`
+          The result of calling ${createClientFunctionName} was saved to a
+          variable, but that variable was created in an unexpected way.
+        ` +
+          "\n" +
+          getCodeFrame(id.node) +
+          "\n" +
+          oneLine`
+            The only variable declaration forms supported by
+            the run-on-server macro are:
+          ` +
+          "\n  " +
+          stripIndent`
+              const runOnServer = ${createClientFunctionName}("http://somewhere:3000");
+            OR
+              let runOnServer = ${createClientFunctionName}("http://somewhere:3000");
+            OR
+              var runOnServer = ${createClientFunctionName}("http://somewhere:3000");
+          `
       );
     }
 
@@ -80,17 +121,24 @@ function runOnServerMacro({ references, state, babel, config }) {
     }
 
     const runOnServerPaths = bindings.referencePaths;
+    const runOnServerFunctionName = id.node.name;
     runOnServerPaths.forEach((referencePath) => {
       // Handle module.exports = runOnServer, { foo: runOnServer }, etc.
       if (!referencePath.parentPath.isCallExpression()) {
         throw new MacroError(
-          "The runOnServer function returned by createClient was referenced " +
-            "in a way where it wasn't a direct variable call. For instance, " +
-            "you might be putting runOnServer in an object literal, or " +
-            "trying to use runOnServer.call or runOnServer.apply. This is " +
-            "not supported- the only form of referencing runOnServer " +
-            "supported by the run-on-server macro is calling it directly, eg " +
-            "runOnServer(...)."
+          oneLine`
+            ${runOnServerFunctionName} was referenced in a way where it wasn't
+            a direct variable call.
+          ` +
+            "\n" +
+            getCodeFrame(referencePath.node) +
+            "\n" +
+            oneLine`
+              This is not supported- the only form of referencing
+              ${runOnServerFunctionName} supported by the run-on-server macro is
+              calling it directly, eg:
+            ` +
+            `\n  ${runOnServerFunctionName}("args", [1, 2, 3]);`
         );
       }
 
@@ -99,8 +147,28 @@ function runOnServerMacro({ references, state, babel, config }) {
       // Handle runOnServer();
       if (code == null) {
         throw new MacroError(
-          "The runOnServer function returned by createClient was called " +
-            "without any arguments. This is not a valid use of the library."
+          oneLine`
+            ${runOnServerFunctionName} was called without any arguments.
+            This is not a valid use of the run-on-server library, and is
+            therefore not understood by the run-on-server macro.
+          ` +
+            "\n" +
+            getCodeFrame(callExpression.node) +
+            "\n" +
+            oneLine`
+              ${runOnServerFunctionName} expects to be called with a string or
+              function as the first argument (the code to be executed), and
+              optionally an array as the second argument (the arguments to pass
+              to the executed code). For example:
+            ` +
+            "\n" +
+            `  ${runOnServerFunctionName}("console.log('hi')");\n` +
+            "OR\n" +
+            `  ${runOnServerFunctionName}(() => console.log("hi"));\n` +
+            "OR\n" +
+            `  ${runOnServerFunctionName}((a, b, c) => a + b + c, [1, 2, 3]);\n` +
+            "OR\n" +
+            `  ${runOnServerFunctionName}("args[0] + args[1] + args[2]", [1, 2, 3]);\n`
         );
       }
 
@@ -115,11 +183,15 @@ function runOnServerMacro({ references, state, babel, config }) {
         )
       ) {
         throw new MacroError(
-          "Found a situation where runOnServer was called and the first " +
-            "argument was not a template literal, string literal, arrow " +
-            "function expression, function expression, or identifier " +
-            "referring to one of those. These are the only forms supported " +
-            "by the run-on-server macro."
+          oneLine`
+            The ${runOnS}
+          `
+
+          // "Found a situation where runOnServer was called and the first " +
+          //   "argument was not a template literal, string literal, arrow " +
+          //   "function expression, function expression, or identifier " +
+          //   "referring to one of those. These are the only forms supported " +
+          //   "by the run-on-server macro."
         );
       }
 
@@ -161,7 +233,7 @@ function runOnServerMacro({ references, state, babel, config }) {
             functionDeclaration.async
           );
 
-          const source = getSourceForNode(functionDeclaration, state);
+          const source = getSourceForNode(functionDeclaration);
           const codeId = md5(source);
           addMapping(codeId, JSON.parse(JSON.stringify(functionExpression)));
           code.replaceWith(
@@ -193,7 +265,7 @@ function runOnServerMacro({ references, state, babel, config }) {
         }
       }
 
-      const source = getSourceForNode(code.node, state);
+      const source = getSourceForNode(code.node);
       const codeId = md5(source);
       addMapping(codeId, JSON.parse(JSON.stringify(code.node)));
       code.replaceWith(
@@ -223,23 +295,24 @@ function runOnServerMacro({ references, state, babel, config }) {
     }
   }
 
-  const comment = [
-    ``,
-    `This file was generated by the run-on-server babel macro. It should not`,
-    `be edited by hand.`,
-    ``,
-    `If you want to output this file to a different location, you can`,
-    `configure the macro by creating a file named \`babel-plugin-macros.config.js\``,
-    `in the root of your project with the following content:`,
-    ``,
-    `const path = require("path");`,
-    `module.exports = {`,
-    `  runOnServer: {`,
-    `    outputPath: path.resolve(__dirname, "somewhere", "else.js")`,
-    `  }`,
-    `};`,
-    ``,
-  ].join("\n");
+  const comment =
+    "\n" +
+    stripIndent`
+      This file was generated by the run-on-server babel macro. It should not
+      be edited by hand.
+      
+      If you want to output this file to a different location, you can
+      configure the macro by creating a file named \`babel-plugin-macros.config.js\`
+      in the root of your project with the following content:
+      
+      const path = require("path");
+      module.exports = {
+        runOnServer: {
+          outputPath: path.resolve(__dirname, "somewhere", "else.js")
+        }
+      };
+    ` +
+    "\n";
 
   const output = generate(t.program([outputContent]), {
     auxiliaryCommentBefore: comment,

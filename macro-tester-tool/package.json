@@ -21,6 +21,9 @@
     "dev": "next",
     "build": "next build",
     "start": "next start",
-    "server": "node server/index.js"
+    "server": "nodemon --watch .. server/index.js"
+  },
+  "devDependencies": {
+    "nodemon": "^1.14.12"
   }
 }
