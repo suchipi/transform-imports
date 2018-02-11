@@ -1,6 +1,7 @@
 const path = require("path");
 const fs = require("fs");
 const { cd, rm, exec } = require("shelljs");
+const chalk = require("chalk");
 const packageJson = require("../package.json");
 
 const bin = (name) =>
@@ -17,6 +18,7 @@ const pkgsWithSrc = packageJson.workspaces
   .filter(Boolean);
 
 pkgsWithSrc.forEach((pkgPath) => {
+  console.log(chalk.blue(pkgPath));
   cd(path.resolve(__dirname, "..", pkgPath));
   rm("-rf", "dist/*");
   exec(`${bin("babel")} src -d dist`);

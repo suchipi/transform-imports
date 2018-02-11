@@ -20,6 +20,7 @@ exec(
   [
     bin("concurrently"),
     "--raw",
+    "--kill-others",
     pkgsWithSrc
       .map(
         (pkgPath) =>
@@ -27,9 +28,9 @@ exec(
           [
             bin("babel"),
             "-w",
-            path.resolve(__dirname, "..", pkgPath, "src"),
+            path.join(pkgPath, "src"),
             "-d",
-            path.resolve(__dirname, "..", pkgPath, "dist"),
+            path.join(pkgPath, "dist"),
           ].join(" ") +
           "'"
       )

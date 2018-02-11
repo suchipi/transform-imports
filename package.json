@@ -15,6 +15,7 @@
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-env": "^1.6.1",
     "babel-preset-flow": "^6.23.0",
+    "chalk": "^2.3.1",
     "concurrently": "^3.5.1",
     "eslint": "^4.16.0",
     "eslint-config-unobtrusive": "^1.2.1",
@@ -31,7 +32,7 @@
   "scripts": {
     "test": "yarn run build; cd test && jest",
     "build": "node scripts/build.js",
-    "build:watch": "node scripts/dist.js"
+    "build:watch": "node scripts/build-watch.js"
   },
   "jest": {
     "transform": {}
