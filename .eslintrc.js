@@ -11,5 +11,6 @@ module.exports = {
   },
   globals: {
     Promise: false,
+    Symbol: false,
   },
 };

@@ -15,8 +15,14 @@
     "babel-runtime": "^6.26.0",
     "babel-types": "^6.26.0",
     "common-tags": "^1.7.2",
+    "jscodeshift": "^0.4.0",
     "md5": "^2.2.1",
     "supports-color": "^5.1.0",
     "text-buffer": "^13.11.8"
+  },
+  "devDependencies": {
+    "babel-core": "6",
+    "jest": "^22.2.2",
+    "jest-in-case": "^1.0.2"
   }
 }

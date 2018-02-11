@@ -29,8 +29,5 @@
     "test": "yarn run build; cd packages/run-on-server && yarn run test",
     "build": "node scripts/build.js",
     "build:watch": "node scripts/build-watch.js"
-  },
-  "jest": {
-    "transform": {}
   }
 }
