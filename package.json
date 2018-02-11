@@ -9,9 +9,7 @@
   ],
   "devDependencies": {
     "babel-cli": "^6.26.0",
-    "babel-core": "^6.26.0",
     "babel-eslint": "^8.2.1",
-    "babel-plugin-macros": "^2.1.0",
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-env": "^1.6.1",
     "babel-preset-flow": "^6.23.0",
@@ -24,13 +22,11 @@
     "eslint-plugin-react": "^7.6.1",
     "flow-bin": "^0.64.0",
     "flow-typed": "^2.3.0",
-    "jest": "^22.1.4",
-    "jest-in-case": "^1.0.2",
     "prettier": "^1.10.2",
     "shelljs": "^0.8.1"
   },
   "scripts": {
-    "test": "yarn run build; cd test && jest",
+    "test": "yarn run build; cd packages/run-on-server && yarn run test",
     "build": "node scripts/build.js",
     "build:watch": "node scripts/build-watch.js"
   },

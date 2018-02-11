@@ -334,7 +334,7 @@ describe("run-on-server", () => {
     });
   });
 
-  describe("id mappings macro", () => {
+  xdescribe("id mappings macro", () => {
     const macroPath = path.resolve(__dirname, "..", "client.macro");
     const outputPath = path.resolve(__dirname, "macroOutput.js");
 

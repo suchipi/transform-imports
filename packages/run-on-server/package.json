@@ -22,5 +22,18 @@
     "@run-on-server/client": "2.1.0",
     "@run-on-server/server": "2.1.0",
     "@run-on-server/transform": "2.1.0"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-plugin-macros": "^2.1.0",
+    "dedent": "^0.7.0",
+    "jest": "^22.1.4",
+    "jest-in-case": "^1.0.2"
+  },
+  "scripts": {
+    "test": "cd test && jest"
+  },
+  "jest": {
+    "transform": {}
   }
 }
