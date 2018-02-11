@@ -1,7 +1,7 @@
 // @flow
 import * as React from "react";
 import debounce from "lodash/debounce";
-import createClient from "../../client";
+import createClient from "run-on-server/client";
 import Head from "next/head";
 import Editor from "../components/Editor";
 import ErrorDisplay from "../components/ErrorDisplay";

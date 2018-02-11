@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 
-const createServer = require("../../server");
+const createServer = require("run-on-server/server");
 
 const app = express();
 const server = createServer({ requireFrom: __dirname });

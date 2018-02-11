@@ -1,7 +1,7 @@
 /* @flow */
 const fetchPonyfill = require("fetch-ponyfill");
 const fetch = fetchPonyfill().fetch;
-import type { APIResponse, RunOnServer } from "../types";
+import type { APIResponse, RunOnServer } from "run-on-server/types";
 
 module.exports = function createClient(url: string): RunOnServer {
   return function runOnServer(

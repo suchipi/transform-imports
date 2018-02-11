@@ -2,7 +2,7 @@
 const Module = require("module");
 const path = require("path");
 const makeRequireFunction = require("./makeRequireFunction");
-import type { ModuleEnvironment } from "../types";
+import type { ModuleEnvironment } from "run-on-server/types";
 
 module.exports = function createFakeModuleEnvironment(
   requireFrom: ?string

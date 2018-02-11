@@ -1,38 +1,12 @@
 {
-  "name": "run-on-server",
-  "version": "2.0.0",
-  "description": "A client/server HTTP API to run code on a remote server.",
-  "keywords": [
-    "eval",
-    "server",
-    "client",
-    "http",
-    "json",
-    "vm",
-    "ipc"
+  "private": true,
+  "workspaces": [
+    "packages/client",
+    "packages/macro-tester-tool",
+    "packages/run-on-server",
+    "packages/server",
+    "packages/transform"
   ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/suchipi/run-on-server.git"
-  },
-  "main": "index.js",
-  "author": "Suchipi Izumi",
-  "license": "MIT",
-  "dependencies": {
-    "acorn": "^5.3.0",
-    "babel-code-frame": "^6.26.0",
-    "babel-generator": "^6.26.0",
-    "babel-runtime": "^6.26.0",
-    "babel-types": "^6.26.0",
-    "body-parser": "^1.18.2",
-    "common-tags": "^1.7.2",
-    "express": "^4.16.2",
-    "fetch-ponyfill": "^4.1.0",
-    "md5": "^2.2.1",
-    "strip-ansi": "^4.0.0",
-    "supports-color": "^5.1.0",
-    "text-buffer": "^13.11.8"
-  },
   "devDependencies": {
     "babel-cli": "^6.26.0",
     "babel-core": "^6.26.0",
@@ -41,6 +15,7 @@
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-env": "^1.6.1",
     "babel-preset-flow": "^6.23.0",
+    "concurrently": "^3.5.1",
     "eslint": "^4.16.0",
     "eslint-config-unobtrusive": "^1.2.1",
     "eslint-plugin-flowtype": "^2.42.0",
@@ -51,12 +26,12 @@
     "jest": "^22.1.4",
     "jest-in-case": "^1.0.2",
     "prettier": "^1.10.2",
-    "rimraf": "^2.6.2"
+    "shelljs": "^0.8.1"
   },
   "scripts": {
     "test": "yarn run build; cd test && jest",
-    "build": "rimraf dist; babel src -d dist",
-    "build:watch": "rimraf dist; babel -w src -d dist"
+    "build": "node scripts/build.js",
+    "build:watch": "node scripts/dist.js"
   },
   "jest": {
     "transform": {}

@@ -1,5 +1,5 @@
 /* @flow */
-import type { APIRequest, IDMappings } from "../types";
+import type { APIRequest, IDMappings } from "run-on-server/types";
 
 module.exports = function parseRequest(
   requestBody: APIRequest,

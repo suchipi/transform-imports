@@ -1,0 +1,26 @@
+{
+  "name": "run-on-server",
+  "version": "2.1.0",
+  "description": "A client/server HTTP API to run code on a remote server.",
+  "keywords": [
+    "eval",
+    "server",
+    "client",
+    "http",
+    "json",
+    "vm",
+    "ipc"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/suchipi/run-on-server.git"
+  },
+  "main": "index.js",
+  "author": "Suchipi Izumi",
+  "license": "MIT",
+  "dependencies": {
+    "@run-on-server/client": "2.1.0",
+    "@run-on-server/server": "2.1.0",
+    "@run-on-server/transform": "2.1.0"
+  }
+}
