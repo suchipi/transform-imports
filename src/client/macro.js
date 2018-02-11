@@ -16,6 +16,7 @@ function runOnServerMacro({ references, state, babel, config }) {
     (config && config.outputPath) ||
     path.join(process.cwd(), "run-on-server-id-mappings.js");
 
+  // TODO: use existing output file if present
   const outputContent = t.expressionStatement(
     t.assignmentExpression(
       "=",
@@ -184,14 +185,16 @@ function runOnServerMacro({ references, state, babel, config }) {
       ) {
         throw new MacroError(
           oneLine`
-            The ${runOnS}
-          `
-
-          // "Found a situation where runOnServer was called and the first " +
-          //   "argument was not a template literal, string literal, arrow " +
-          //   "function expression, function expression, or identifier " +
-          //   "referring to one of those. These are the only forms supported " +
-          //   "by the run-on-server macro."
+            ${runOnServerFunctionName} was called and the first argument was
+            not a template literal, string literal, arrow function expression,
+            function expression, or identifier referring to one of those.
+          ` +
+            "\n" +
+            getCodeFrame(code.node) +
+            "\n" +
+            oneLine`
+              These are the only forms supported by the run-on-server macro.
+            `
         );
       }
 
