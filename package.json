@@ -2,6 +2,7 @@
   "private": true,
   "workspaces": [
     "packages/client",
+    "packages/imports-visitor",
     "packages/macro-tester-tool",
     "packages/run-on-server",
     "packages/server",

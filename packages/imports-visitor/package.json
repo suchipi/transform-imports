@@ -1,0 +1,21 @@
+{
+  "name": "imports-visitor",
+  "version": "1.0.0",
+  "description": "Babel visitor that makes it easier to work with imports and require calls.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/suchipi/run-on-server.git"
+  },
+  "main": "dist/index.js",
+  "author": "Suchipi Izumi",
+  "license": "MIT",
+  "dependencies": {
+    "babel-runtime": "^6.26.0",
+    "babel-types": "^6.26.0"
+  },
+  "devDependencies": {
+    "babel-core": "6",
+    "jest": "^22.2.2",
+    "jest-in-case": "^1.0.2"
+  }
+}
