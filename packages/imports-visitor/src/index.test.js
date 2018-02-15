@@ -767,3 +767,54 @@ cases(
     },
   ]
 );
+
+cases(
+  "smoke tests",
+  ({ code, action, output }) => {
+    const imports = [];
+    const plugin = () => ({
+      visitor: {
+        Program(path) {
+          path.traverse(importsVisitor, { imports });
+          action(imports);
+        },
+      },
+    });
+
+    const actualOutput = compile(plugin, code);
+    expect(clean(actualOutput)).toBe(clean(output));
+  },
+  [
+    {
+      code: `
+      import React, { PropTypes } from "react";
+      import App from "./App";
+    `,
+      action: (imports) => {
+        imports.filter((def) => def.source === "react").forEach((def) => {
+          if (
+            def.importedExport.name === "default" &&
+            def.importedExport.isImportedAsCJS === false
+          ) {
+            def.fork();
+            def.importedExport.name = "*";
+          }
+
+          if (
+            def.variableName === "PropTypes" &&
+            def.importedExport.name === "PropTypes"
+          ) {
+            def.fork();
+            def.importedExport.name = "default";
+            def.source = "prop-types";
+          }
+        });
+      },
+      output: `
+      import PropTypes from "prop-types";
+      import * as React from "react";
+      import App from "./App";
+    `,
+    },
+  ]
+);
