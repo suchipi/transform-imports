@@ -1,29 +1,31 @@
-import importsVisitor from "./index";
-import * as babel from "babel-core";
-import cases from "jest-in-case";
+const importsVisitor = require("./index");
+const babel = require("babel-core");
+const cases = require("jest-in-case");
 
 const compile = (plugin, code) => {
   const result = babel.transform(code, { plugins: [plugin] });
   return result.code;
 };
 
-const getImports = (code) => {
-  const imports = [];
-  const plugin = () => ({
-    visitor: {
-      Program(path) {
-        path.traverse(importsVisitor, { imports });
-      },
-    },
-  });
-  compile(plugin, code);
-  return imports;
-};
+const clean = (str) =>
+  str
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join(" ");
 
 cases(
   "basic parsing works",
   ({ code, imports }) => {
-    const actualImports = getImports(code);
+    const actualImports = [];
+    const plugin = () => ({
+      visitor: {
+        Program(path) {
+          path.traverse(importsVisitor, { imports: actualImports });
+        },
+      },
+    });
+    compile(plugin, code);
     imports.forEach((importDef, index) => {
       expect(actualImports[index]).toEqual(expect.objectContaining(importDef));
     });
@@ -40,26 +42,37 @@ cases(
         {
           source: "bar",
           variableName: "foo",
-          exportName: "default",
-          isCJSDefaultImport: false,
+          importedExport: {
+            name: "default",
+            isImportedAsCJS: false,
+          },
           path: expect.any(Object),
         },
         {
           source: "zeeoop",
           variableName: "zoop",
-          exportName: "zoop",
+          importedExport: {
+            name: "zoop",
+            isImportedAsCJS: false,
+          },
           path: expect.any(Object),
         },
         {
           source: "zeeoop",
           variableName: "zip",
-          exportName: "zow",
+          importedExport: {
+            name: "zow",
+            isImportedAsCJS: false,
+          },
           path: expect.any(Object),
         },
         {
           source: "shooting-stars",
           variableName: "star",
-          exportName: "*",
+          importedExport: {
+            name: "*",
+            isImportedAsCJS: false,
+          },
           path: expect.any(Object),
         },
       ],
@@ -74,20 +87,28 @@ cases(
         {
           source: "bar",
           variableName: "foo",
-          exportName: "default",
-          isCJSDefaultImport: true,
+          importedExport: {
+            name: "*",
+            isImportedAsCJS: true,
+          },
           path: expect.any(Object),
         },
         {
           source: "zeeoop",
           variableName: "zoop",
-          exportName: "zoop",
+          importedExport: {
+            name: "zoop",
+            isImportedAsCJS: true,
+          },
           path: expect.any(Object),
         },
         {
           source: "zeeoop",
           variableName: "zip",
-          exportName: "zow",
+          importedExport: {
+            name: "zow",
+            isImportedAsCJS: true,
+          },
           path: expect.any(Object),
         },
       ],
@@ -103,19 +124,28 @@ cases(
         {
           source: null,
           variableName: "foo",
-          exportName: "default",
+          importedExport: {
+            name: "*",
+            isImportedAsCJS: true,
+          },
           path: expect.any(Object),
         },
         {
           source: "bar",
           variableName: null,
-          exportName: "bar",
+          importedExport: {
+            name: "bar",
+            isImportedAsCJS: true,
+          },
           path: expect.any(Object),
         },
         {
           source: "some-array",
           variableName: null,
-          exportName: null,
+          importedExport: {
+            name: null,
+            isImportedAsCJS: true,
+          },
           path: expect.any(Object),
         },
       ],
@@ -126,7 +156,15 @@ cases(
 cases(
   "path node type",
   ({ code, type }) => {
-    const imports = getImports(code);
+    const imports = [];
+    const plugin = () => ({
+      visitor: {
+        Program(path) {
+          path.traverse(importsVisitor, { imports });
+        },
+      },
+    });
+    compile(plugin, code);
     expect(imports[0].path.node.type).toBe(type);
   },
   [
@@ -160,13 +198,13 @@ cases(
 
 cases(
   "remove method",
-  ({ code, output, removalIndex }) => {
+  ({ code, output, index }) => {
     const imports = [];
     const plugin = () => ({
       visitor: {
         Program(path) {
           path.traverse(importsVisitor, { imports });
-          imports[removalIndex || 0].remove();
+          imports[index || 0].remove();
         },
       },
     });
@@ -208,13 +246,13 @@ cases(
       name: "import declaration - named specifier with default specifier",
       code: `import foo, { bar } from "bar";`,
       output: `import foo from "bar";`,
-      removalIndex: 1,
+      index: 1,
     },
     {
       name: "import declaration - star specifier with default export",
       code: `import bar, * as foo from "bar";`,
       output: `import bar from "bar";`,
-      removalIndex: 1,
+      index: 1,
     },
     {
       name: "require call",
@@ -235,25 +273,114 @@ cases(
 );
 
 cases(
-  "changing source",
-  ({ code, output, changeIndex }) => {
+  "forking",
+  ({ code, output, index }) => {
     const imports = [];
     const plugin = () => ({
       visitor: {
         Program(path) {
           path.traverse(importsVisitor, { imports });
-          const importDef = imports[changeIndex || 0];
-          importDef.source = "new-source";
+          const importDef = imports[index || 0];
+          importDef.fork();
         },
       },
     });
 
-    const clean = (str) =>
-      str
-        .split("\n")
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .join("\n");
+    const actualOutput = compile(plugin, code);
+    expect(clean(actualOutput)).toBe(clean(output));
+  },
+  [
+    {
+      name: "import declaration - lone default specifier",
+      code: `import foo from "bar";`,
+      output: `import foo from "bar";`,
+    },
+    {
+      name: "import declaration - lone named specifier",
+      code: `import { foo } from "bar";`,
+      output: `import { foo } from "bar";`,
+    },
+    {
+      name: "import declaration - lone star specifier",
+      code: `import * as foo from "bar";`,
+      output: `import * as foo from "bar";`,
+    },
+    {
+      name: "import declaration - default specifier with named specifier",
+      code: `import foo, { bar } from "bar";`,
+      output: `
+        import { bar } from "bar";
+        import foo from "bar";
+      `,
+    },
+    {
+      name: "import declaration - default specifier with star specifier",
+      code: `import foo, * as bar from "bar";`,
+      output: `
+        import * as bar from "bar";
+        import foo from "bar";
+      `,
+    },
+    {
+      name: "import declaration - two named specifiers",
+      code: `import { foo, bar } from "bar";`,
+      output: `
+        import { bar } from "bar";
+        import { foo } from "bar";
+      `,
+    },
+    {
+      name: "import declaration - named specifier with default specifier",
+      code: `import foo, { bar } from "bar";`,
+      output: `
+        import foo from "bar";
+        import { bar } from "bar";
+      `,
+      index: 1,
+    },
+    {
+      name: "import declaration - star specifier with default export",
+      code: `import bar, * as foo from "bar";`,
+      output: `
+        import bar from "bar";
+        import * as foo from "bar";
+      `,
+      index: 1,
+    },
+    {
+      name: "require call",
+      code: `const foo = require("bar");`,
+      output: `const foo = require("bar");`,
+    },
+    {
+      name: "destructured require call - lone",
+      code: `const { foo } = require("bar");`,
+      output: `const { foo } = require("bar");`,
+    },
+    {
+      name: "destructured require call - not lone",
+      code: `const { foo, bar } = require("bar");`,
+      output: `
+        const { bar } = require("bar");
+        const { foo } = require("bar");
+      `,
+    },
+  ]
+);
+
+cases(
+  "changing source",
+  ({ code, output, index }) => {
+    const imports = [];
+    const plugin = () => ({
+      visitor: {
+        Program(path) {
+          path.traverse(importsVisitor, { imports });
+          const importDef = imports[index || 0];
+          importDef.source = "new-source";
+        },
+      },
+    });
 
     const actualOutput = compile(plugin, code);
     expect(clean(actualOutput)).toBe(clean(output));
@@ -305,7 +432,7 @@ cases(
         import foo from "bar";
         import { bar } from "new-source";
       `,
-      changeIndex: 1,
+      index: 1,
     },
     {
       name: "import declaration - star specifier with default export",
@@ -314,7 +441,7 @@ cases(
         import bar from "bar";
         import * as foo from "new-source";
       `,
-      changeIndex: 1,
+      index: 1,
     },
     {
       name: "require call",
@@ -333,6 +460,310 @@ cases(
         const { bar } = require("bar");
         const { foo } = require("new-source");
       `,
+    },
+  ]
+);
+
+cases(
+  "changing variableName",
+  ({ code, output, index }) => {
+    const imports = [];
+    const plugin = () => ({
+      visitor: {
+        Program(path) {
+          path.traverse(importsVisitor, { imports });
+          const importDef = imports[index || 0];
+          importDef.variableName = "newVar";
+        },
+      },
+    });
+
+    const actualOutput = compile(plugin, code);
+    expect(clean(actualOutput)).toBe(clean(output));
+  },
+  [
+    {
+      name: "import declaration - lone default specifier",
+      code: `import foo from "bar";`,
+      output: `import newVar from "bar";`,
+    },
+    {
+      name: "import declaration - lone named specifier",
+      code: `import { foo } from "bar";`,
+      output: `import { foo as newVar } from "bar";`,
+    },
+    {
+      name: "import declaration - lone star specifier",
+      code: `import * as foo from "bar";`,
+      output: `import * as newVar from "bar";`,
+    },
+    {
+      name: "import declaration - default specifier with named specifier",
+      code: `import foo, { bar } from "bar";`,
+      output: `import newVar, { bar } from "bar";`,
+    },
+    {
+      name: "import declaration - default specifier with star specifier",
+      code: `import foo, * as bar from "bar";`,
+      output: `import newVar, * as bar from "bar";`,
+    },
+    {
+      name: "import declaration - two named specifiers",
+      code: `import { foo, bar } from "bar";`,
+      output: `import { foo as newVar, bar } from "bar";`,
+    },
+    {
+      name: "import declaration - named specifier with default specifier",
+      code: `import foo, { bar } from "bar";`,
+      output: `import foo, { bar as newVar } from "bar";`,
+      index: 1,
+    },
+    {
+      name: "import declaration - star specifier with default export",
+      code: `import bar, * as foo from "bar";`,
+      output: `import bar, * as newVar from "bar";`,
+      index: 1,
+    },
+    {
+      name: "require call",
+      code: `const foo = require("bar");`,
+      output: `const newVar = require("bar");`,
+    },
+    {
+      name: "destructured require call - lone",
+      code: `const { foo } = require("bar");`,
+      output: `const { foo: newVar } = require("bar");`,
+    },
+    {
+      name: "destructured require call - not lone",
+      code: `const { foo, bar } = require("bar");`,
+      output: `const { foo: newVar, bar } = require("bar");`,
+    },
+  ]
+);
+
+cases(
+  "changing importedExport",
+  ({ code, importedExport, output, index }) => {
+    const imports = [];
+    const plugin = () => ({
+      visitor: {
+        Program(path) {
+          path.traverse(importsVisitor, { imports });
+          const importDef = imports[index || 0];
+          importDef.importedExport = importedExport;
+        },
+      },
+    });
+
+    const actualOutput = compile(plugin, code);
+    expect(clean(actualOutput)).toBe(clean(output));
+  },
+  [
+    // Changing default import into things
+    {
+      name: "default import -> default import (no effect)",
+      code: `import foo from "foo";`,
+      importedExport: { name: "default", isImportedAsCJS: false },
+      output: `import foo from "foo";`,
+    },
+    {
+      name: "default import -> star import",
+      code: `import foo from "foo";`,
+      importedExport: { name: "*", isImportedAsCJS: false },
+      output: `import * as foo from "foo";`,
+    },
+    {
+      name: "default import -> named import",
+      code: `import foo from "foo";`,
+      importedExport: { name: "bar", isImportedAsCJS: false },
+      output: `import { bar as foo } from "foo";`,
+    },
+    {
+      name: "default import -> star import (CJS)",
+      code: `import foo from "foo";`,
+      importedExport: { name: "*", isImportedAsCJS: true },
+      output: `const foo = require("foo");`,
+    },
+    {
+      name: "default import -> named import (CJS)",
+      code: `import foo from "foo";`,
+      importedExport: { name: "bar", isImportedAsCJS: true },
+      output: `const { bar: foo } = require("foo");`,
+    },
+
+    // Changing named import into things
+    {
+      name: "named import -> default import",
+      code: `import { foo } from "foo";`,
+      importedExport: { name: "default", isImportedAsCJS: false },
+      output: `import foo from "foo";`,
+    },
+    {
+      name: "named import -> star import",
+      code: `import { foo } from "foo";`,
+      importedExport: { name: "*", isImportedAsCJS: false },
+      output: `import * as foo from "foo";`,
+    },
+    {
+      name: "named import -> named import",
+      code: `import { foo } from "foo";`,
+      importedExport: { name: "bar", isImportedAsCJS: false },
+      output: `import { bar as foo } from "foo";`,
+    },
+    {
+      name: "named import -> named import (same name)",
+      code: `import { foo } from "foo";`,
+      importedExport: { name: "foo", isImportedAsCJS: false },
+      output: `import { foo } from "foo";`,
+    },
+    {
+      name: "named import -> star import (CJS)",
+      code: `import { foo } from "foo";`,
+      importedExport: { name: "*", isImportedAsCJS: true },
+      output: `const foo = require("foo");`,
+    },
+    {
+      name: "named import -> named import (CJS)",
+      code: `import { foo } from "foo";`,
+      importedExport: { name: "bar", isImportedAsCJS: true },
+      output: `const { bar: foo } = require("foo");`,
+    },
+
+    // Changing star import into things
+    {
+      name: "star import -> default import",
+      code: `import * as foo from "foo";`,
+      importedExport: { name: "default", isImportedAsCJS: false },
+      output: `import foo from "foo";`,
+    },
+    {
+      name: "star import -> star import (no effect)",
+      code: `import * as foo from "foo";`,
+      importedExport: { name: "*", isImportedAsCJS: false },
+      output: `import * as foo from "foo";`,
+    },
+    {
+      name: "star import -> named import",
+      code: `import * as foo from "foo";`,
+      importedExport: { name: "bar", isImportedAsCJS: false },
+      output: `import { bar as foo } from "foo";`,
+    },
+    {
+      name: "star import -> star import (CJS)",
+      code: `import * as foo from "foo";`,
+      importedExport: { name: "*", isImportedAsCJS: true },
+      output: `const foo = require("foo");`,
+    },
+    {
+      name: "star import -> named import (CJS)",
+      code: `import * as foo from "foo";`,
+      importedExport: { name: "bar", isImportedAsCJS: true },
+      output: `const { bar: foo } = require("foo");`,
+    },
+
+    // Changing star import (CJS) into things
+    {
+      name: "star import (CJS) -> default import",
+      code: `const foo = require("foo");`,
+      importedExport: { name: "default", isImportedAsCJS: false },
+      output: `import foo from "foo";`,
+    },
+    {
+      name: "star import (CJS) -> star import",
+      code: `const foo = require("foo");`,
+      importedExport: { name: "*", isImportedAsCJS: false },
+      output: `import * as foo from "foo";`,
+    },
+    {
+      name: "star import (CJS) -> named import",
+      code: `const foo = require("foo");`,
+      importedExport: { name: "bar", isImportedAsCJS: false },
+      output: `import { bar as foo } from "foo";`,
+    },
+    {
+      name: "star import (CJS) -> star import (CJS) (no effect)",
+      code: `const foo = require("foo");`,
+      importedExport: { name: "*", isImportedAsCJS: true },
+      output: `const foo = require("foo");`,
+    },
+    {
+      name: "star import (CJS) -> named import (CJS)",
+      code: `const foo = require("foo");`,
+      importedExport: { name: "foo", isImportedAsCJS: true },
+      output: `const { foo } = require("foo");`,
+    },
+
+    // Changing named import (CJS) into things
+    {
+      name: "named import (CJS) -> default import",
+      code: `const { foo } = require("foo");`,
+      importedExport: { name: "default", isImportedAsCJS: false },
+      output: `import foo from "foo";`,
+    },
+    {
+      name: "named import (CJS) -> star import",
+      code: `const { foo } = require("foo");`,
+      importedExport: { name: "*", isImportedAsCJS: false },
+      output: `import * as foo from "foo";`,
+    },
+    {
+      name: "named import (CJS) -> named import",
+      code: `const { foo } = require("foo");`,
+      importedExport: { name: "bar", isImportedAsCJS: false },
+      output: `import { bar as foo } from "foo";`,
+    },
+    {
+      name: "named import (CJS) -> star import (CJS)",
+      code: `const { foo } = require("foo");`,
+      importedExport: { name: "*", isImportedAsCJS: true },
+      output: `const foo = require("foo");`,
+    },
+    {
+      name: "named import (CJS) -> named import (CJS)",
+      code: `const { foo } = require("foo");`,
+      importedExport: { name: "bar", isImportedAsCJS: true },
+      output: `const { bar: foo } = require("foo");`,
+    },
+    {
+      name: "named import (CJS) -> named import (CJS) (same name)",
+      code: `const { foo } = require("foo");`,
+      importedExport: { name: "foo", isImportedAsCJS: true },
+      output: `const { foo } = require("foo");`,
+    },
+  ]
+);
+
+cases(
+  "changing named export via variableName and importedExport",
+  ({ code, newName, output, index }) => {
+    const imports = [];
+    const plugin = () => ({
+      visitor: {
+        Program(path) {
+          path.traverse(importsVisitor, { imports });
+          const importDef = imports[index || 0];
+          importDef.variableName = newName;
+          importDef.importedExport.name = newName;
+        },
+      },
+    });
+
+    const actualOutput = compile(plugin, code);
+    expect(clean(actualOutput)).toBe(clean(output));
+  },
+  [
+    {
+      name: "import statement",
+      code: `import { foo } from "foo";`,
+      newName: "bar",
+      output: `import { bar } from "foo";`,
+    },
+    {
+      name: "require statement",
+      code: `const { foo } = require("foo");`,
+      newName: "bar",
+      output: `const { bar } = require("foo");`,
     },
   ]
 );
