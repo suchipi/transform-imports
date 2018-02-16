@@ -11,7 +11,7 @@ class ImportDefinition {
   set path(newPath) {
     const isValidPath =
       newPath.isVariableDeclarator() || // const `foo = require("bar")`;
-      newPath.isObjectProperty() || // const `{ foo }` = require("bar");
+      newPath.isObjectProperty() || // const { `foo` } = require("bar");
       newPath.isImportDefaultSpecifier() || // import `foo` from "bar";
       newPath.isImportSpecifier() || // import `{ foo }` from "bar";
       newPath.isImportNamespaceSpecifier(); // import `* as foo` from "bar";

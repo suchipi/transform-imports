@@ -6,11 +6,8 @@ module.exports = {
     "unobtrusive/react",
   ],
   env: {
+    es6: true,
     node: true,
     jest: true,
-  },
-  globals: {
-    Promise: false,
-    Symbol: false,
   },
 };
