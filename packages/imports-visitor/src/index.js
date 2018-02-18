@@ -266,12 +266,22 @@ class ImportDefinition {
   // and call fork() on the ImportDefinition for foo, you'll get:
   //   import { foo } from "blah";
   //   import { bar } from "blah";
-  fork() {
+  fork({ insert = "after" } = {}) {
     const path = this.path;
     const importSiblings = this._getImportSiblings();
     if (importSiblings.length === 1) {
       // We're already alone, so no need to fork.
       return;
+    }
+
+    let insertionMethod;
+    let insertionOffset;
+    if (insert === "before") {
+      insertionMethod = "insertBefore";
+      insertionOffset = -1;
+    } else {
+      insertionMethod = "insertAfter";
+      insertionOffset = 1;
     }
 
     if (
@@ -280,12 +290,13 @@ class ImportDefinition {
       path.isImportSpecifier()
     ) {
       const importDeclaration = path.parentPath;
-      importDeclaration.insertAfter(
+
+      importDeclaration[insertionMethod](
         t.importDeclaration([path.node], t.stringLiteral(this.source))
       );
       const newDeclaration = importDeclaration.parentPath.get(
         importDeclaration.listKey
-      )[importDeclaration.key + 1];
+      )[importDeclaration.key + insertionOffset];
       this.path = newDeclaration.get("specifiers")[0];
       path.remove();
     } else if (path.isObjectProperty()) {
@@ -293,7 +304,7 @@ class ImportDefinition {
         parent.isVariableDeclarator()
       );
       const declaration = declarator.parentPath;
-      declaration.insertAfter(
+      declaration[insertionMethod](
         t.variableDeclaration(declaration.node.kind, [
           t.variableDeclarator(
             t.objectPattern([path.node]),
@@ -304,7 +315,7 @@ class ImportDefinition {
         ])
       );
       const newDeclaration = declaration.parentPath.get(declaration.listKey)[
-        declaration.key + 1
+        declaration.key + insertionOffset
       ];
       this.path = newDeclaration
         .get("declarations")[0]

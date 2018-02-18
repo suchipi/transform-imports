@@ -274,14 +274,14 @@ cases(
 
 cases(
   "forking",
-  ({ code, output, index }) => {
+  ({ code, output, index, insert }) => {
     const imports = [];
     const plugin = () => ({
       visitor: {
         Program(path) {
           path.traverse(importsVisitor, { imports });
           const importDef = imports[index || 0];
-          importDef.fork();
+          importDef.fork({ insert });
         },
       },
     });
@@ -363,6 +363,95 @@ cases(
       output: `
         const { bar } = require("bar");
         const { foo } = require("bar");
+      `,
+    },
+    {
+      name: "import declaration - lone default specifier (before)",
+      code: `import foo from "bar";`,
+      insert: "before",
+      output: `import foo from "bar";`,
+    },
+    {
+      name: "import declaration - lone named specifier (before)",
+      code: `import { foo } from "bar";`,
+      insert: "before",
+      output: `import { foo } from "bar";`,
+    },
+    {
+      name: "import declaration - lone star specifier (before)",
+      code: `import * as foo from "bar";`,
+      insert: "before",
+      output: `import * as foo from "bar";`,
+    },
+    {
+      name:
+        "import declaration - default specifier with named specifier (before)",
+      code: `import foo, { bar } from "bar";`,
+      insert: "before",
+      output: `
+        import foo from "bar";
+        import { bar } from "bar";
+      `,
+    },
+    {
+      name:
+        "import declaration - default specifier with star specifier (before)",
+      code: `import foo, * as bar from "bar";`,
+      insert: "before",
+      output: `
+        import foo from "bar";
+        import * as bar from "bar";
+      `,
+    },
+    {
+      name: "import declaration - two named specifiers (before)",
+      code: `import { foo, bar } from "bar";`,
+      insert: "before",
+      output: `
+        import { foo } from "bar";
+        import { bar } from "bar";
+      `,
+    },
+    {
+      name:
+        "import declaration - named specifier with default specifier (before)",
+      code: `import foo, { bar } from "bar";`,
+      insert: "before",
+      output: `
+        import { bar } from "bar";
+        import foo from "bar";
+      `,
+      index: 1,
+    },
+    {
+      name: "import declaration - star specifier with default export (before)",
+      code: `import bar, * as foo from "bar";`,
+      insert: "before",
+      output: `
+        import * as foo from "bar";
+        import bar from "bar";
+      `,
+      index: 1,
+    },
+    {
+      name: "require call (before)",
+      code: `const foo = require("bar");`,
+      insert: "before",
+      output: `const foo = require("bar");`,
+    },
+    {
+      name: "destructured require call - lone (before)",
+      code: `const { foo } = require("bar");`,
+      insert: "before",
+      output: `const { foo } = require("bar");`,
+    },
+    {
+      name: "destructured require call - not lone (before)",
+      code: `const { foo, bar } = require("bar");`,
+      insert: "before",
+      output: `
+        const { foo } = require("bar");
+        const { bar } = require("bar");
       `,
     },
   ]
@@ -796,7 +885,7 @@ cases(
             def.importedExport.name === "default" &&
             def.importedExport.isImportedAsCJS === false
           ) {
-            def.fork();
+            def.fork({ insert: "before" });
             def.importedExport.name = "*";
           }
 
@@ -804,15 +893,14 @@ cases(
             def.variableName === "PropTypes" &&
             def.importedExport.name === "PropTypes"
           ) {
-            def.fork();
             def.importedExport.name = "default";
             def.source = "prop-types";
           }
         });
       },
       output: `
-      import PropTypes from "prop-types";
       import * as React from "react";
+      import PropTypes from "prop-types";
       import App from "./App";
     `,
     },
