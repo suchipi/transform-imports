@@ -5,6 +5,14 @@ class ImportDefinition {
     this.path = path;
   }
 
+  inspect() {
+    return `ImportDefinition { variableName: "${this.variableName}", source: "${
+      this.source
+    }", importedExport: { name: "${
+      this.importedExport.name
+    }", isImportedAsCJS: ${this.importedExport.isImportedAsCJS} } }`;
+  }
+
   get path() {
     return this._path;
   }
@@ -228,19 +236,23 @@ class ImportDefinition {
   set variableName(newName) {
     const path = this.path;
 
-    if (
-      path.isImportDefaultSpecifier() ||
-      path.isImportNamespaceSpecifier() ||
-      path.isImportSpecifier()
-    ) {
+    if (path.isImportDefaultSpecifier() || path.isImportNamespaceSpecifier()) {
       path.node.local = t.identifier(newName);
+    } else if (path.isImportSpecifier()) {
+      path.replaceWith(
+        t.importSpecifier(
+          t.identifier(newName),
+          t.identifier(path.node.imported.name)
+        )
+      );
     } else if (path.isVariableDeclarator()) {
       path.node.id = t.identifier(newName);
     } else if (path.isObjectProperty()) {
-      path.node.value = t.identifier(newName);
-      if (path.node.value.name === path.node.key.name) {
-        path.node.shorthand = true;
-      }
+      const key = t.identifier(path.node.key.name);
+      const value = t.identifier(newName);
+      path.replaceWith(
+        t.objectProperty(key, value, false, key.name === value.name)
+      );
     }
 
     return null;
@@ -350,47 +362,4 @@ class ImportDefinition {
   }
 }
 
-// Gathers all imports and requires and pushes them into the `this.imports`
-// array passed via the second argument to traverse.
-// Example usage:
-// visitor: {
-//   Program(path) {
-//     const imports = [];
-//     path.traverse(importsVisitor, { imports });
-//     console.log(imports);
-//   },
-// },
-const importsVisitor = {
-  ImportDeclaration(path, state) {
-    path.get("specifiers").forEach((specifier) => {
-      this.imports.push(new ImportDefinition(specifier));
-    });
-  },
-  VariableDeclarator(path, state) {
-    if (
-      !(
-        path.get("init").isCallExpression() &&
-        path
-          .get("init")
-          .get("callee")
-          .isIdentifier() &&
-        path.get("init").get("callee").node.name === "require"
-      )
-    ) {
-      return;
-    }
-
-    if (path.get("id").isObjectPattern()) {
-      path
-        .get("id")
-        .get("properties")
-        .forEach((property) => {
-          this.imports.push(new ImportDefinition(property));
-        });
-    } else {
-      this.imports.push(new ImportDefinition(path));
-    }
-  },
-};
-
-module.exports = importsVisitor;
+module.exports = ImportDefinition;

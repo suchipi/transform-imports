@@ -1,11 +1,5 @@
-const importsVisitor = require("./index");
-const babel = require("babel-core");
+const transformImports = require("./transformImports");
 const cases = require("jest-in-case");
-
-const compile = (plugin, code) => {
-  const result = babel.transform(code, { plugins: [plugin] });
-  return result.code;
-};
 
 const clean = (str) =>
   str
@@ -17,17 +11,12 @@ const clean = (str) =>
 cases(
   "basic parsing works",
   ({ code, imports }) => {
-    const actualImports = [];
-    const plugin = () => ({
-      visitor: {
-        Program(path) {
-          path.traverse(importsVisitor, { imports: actualImports });
-        },
-      },
-    });
-    compile(plugin, code);
-    imports.forEach((importDef, index) => {
-      expect(actualImports[index]).toEqual(expect.objectContaining(importDef));
+    transformImports(code, (actualImports) => {
+      imports.forEach((importDef, index) => {
+        expect(actualImports[index]).toEqual(
+          expect.objectContaining(importDef)
+        );
+      });
     });
   },
   [
@@ -156,16 +145,9 @@ cases(
 cases(
   "path node type",
   ({ code, type }) => {
-    const imports = [];
-    const plugin = () => ({
-      visitor: {
-        Program(path) {
-          path.traverse(importsVisitor, { imports });
-        },
-      },
+    transformImports(code, (imports) => {
+      expect(imports[0].path.node.type).toBe(type);
     });
-    compile(plugin, code);
-    expect(imports[0].path.node.type).toBe(type);
   },
   [
     {
@@ -199,17 +181,10 @@ cases(
 cases(
   "remove method",
   ({ code, output, index }) => {
-    const imports = [];
-    const plugin = () => ({
-      visitor: {
-        Program(path) {
-          path.traverse(importsVisitor, { imports });
-          imports[index || 0].remove();
-        },
-      },
+    const actualOutput = transformImports(code, (imports) => {
+      imports[index || 0].remove();
     });
-    const actualOutput = compile(plugin, code);
-    expect(actualOutput).toBe(output);
+    expect(clean(actualOutput)).toBe(clean(output));
   },
   [
     {
@@ -275,18 +250,11 @@ cases(
 cases(
   "forking",
   ({ code, output, index, insert }) => {
-    const imports = [];
-    const plugin = () => ({
-      visitor: {
-        Program(path) {
-          path.traverse(importsVisitor, { imports });
-          const importDef = imports[index || 0];
-          importDef.fork({ insert });
-        },
-      },
+    const actualOutput = transformImports(code, (imports) => {
+      const importDef = imports[index || 0];
+      importDef.fork({ insert });
     });
 
-    const actualOutput = compile(plugin, code);
     expect(clean(actualOutput)).toBe(clean(output));
   },
   [
@@ -460,18 +428,10 @@ cases(
 cases(
   "changing source",
   ({ code, output, index }) => {
-    const imports = [];
-    const plugin = () => ({
-      visitor: {
-        Program(path) {
-          path.traverse(importsVisitor, { imports });
-          const importDef = imports[index || 0];
-          importDef.source = "new-source";
-        },
-      },
+    const actualOutput = transformImports(code, (imports) => {
+      const importDef = imports[index || 0];
+      importDef.source = "new-source";
     });
-
-    const actualOutput = compile(plugin, code);
     expect(clean(actualOutput)).toBe(clean(output));
   },
   [
@@ -556,18 +516,11 @@ cases(
 cases(
   "changing variableName",
   ({ code, output, index }) => {
-    const imports = [];
-    const plugin = () => ({
-      visitor: {
-        Program(path) {
-          path.traverse(importsVisitor, { imports });
-          const importDef = imports[index || 0];
-          importDef.variableName = "newVar";
-        },
-      },
+    const actualOutput = transformImports(code, (imports) => {
+      const importDef = imports[index || 0];
+      importDef.variableName = "newVar";
     });
 
-    const actualOutput = compile(plugin, code);
     expect(clean(actualOutput)).toBe(clean(output));
   },
   [
@@ -634,18 +587,11 @@ cases(
 cases(
   "changing importedExport",
   ({ code, importedExport, output, index }) => {
-    const imports = [];
-    const plugin = () => ({
-      visitor: {
-        Program(path) {
-          path.traverse(importsVisitor, { imports });
-          const importDef = imports[index || 0];
-          importDef.importedExport = importedExport;
-        },
-      },
+    const actualOutput = transformImports(code, (imports) => {
+      const importDef = imports[index || 0];
+      importDef.importedExport = importedExport;
     });
 
-    const actualOutput = compile(plugin, code);
     expect(clean(actualOutput)).toBe(clean(output));
   },
   [
@@ -826,19 +772,11 @@ cases(
 cases(
   "changing named export via variableName and importedExport",
   ({ code, newName, output, index }) => {
-    const imports = [];
-    const plugin = () => ({
-      visitor: {
-        Program(path) {
-          path.traverse(importsVisitor, { imports });
-          const importDef = imports[index || 0];
-          importDef.variableName = newName;
-          importDef.importedExport.name = newName;
-        },
-      },
+    const actualOutput = transformImports(code, (imports) => {
+      const importDef = imports[index || 0];
+      importDef.variableName = newName;
+      importDef.importedExport.name = newName;
     });
-
-    const actualOutput = compile(plugin, code);
     expect(clean(actualOutput)).toBe(clean(output));
   },
   [
@@ -860,25 +798,17 @@ cases(
 cases(
   "smoke tests",
   ({ code, action, output }) => {
-    const imports = [];
-    const plugin = () => ({
-      visitor: {
-        Program(path) {
-          path.traverse(importsVisitor, { imports });
-          action(imports);
-        },
-      },
-    });
-
-    const actualOutput = compile(plugin, code);
+    const actualOutput = transformImports(code, action);
     expect(clean(actualOutput)).toBe(clean(output));
   },
   [
     {
       code: `
-      import React, { PropTypes } from "react";
-      import App from "./App";
-    `,
+        import React, { PropTypes } from "react";
+        import App from "./App";
+
+        console.log(  "this is unrelated" );
+      `,
       action: (imports) => {
         imports.filter((def) => def.source === "react").forEach((def) => {
           if (
@@ -899,10 +829,12 @@ cases(
         });
       },
       output: `
-      import * as React from "react";
-      import PropTypes from "prop-types";
-      import App from "./App";
-    `,
+        import * as React from "react";
+        import PropTypes from "prop-types";
+        import App from "./App";
+
+        console.log(  "this is unrelated" );
+      `,
     },
   ]
 );
