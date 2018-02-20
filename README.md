@@ -1,3 +1,3 @@
-# rewrite-imports
+# transform-imports
 
 README TODO

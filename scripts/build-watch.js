@@ -31,6 +31,8 @@ exec(
             path.join(pkgPath, "src"),
             "-d",
             path.join(pkgPath, "dist"),
+            "--ignore",
+            "*.test.js",
           ].join(" ") +
           "'"
       )

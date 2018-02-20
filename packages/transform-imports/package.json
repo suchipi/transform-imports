@@ -1,7 +1,7 @@
 {
-  "name": "imports-visitor",
+  "name": "transform-imports",
   "version": "1.0.0",
-  "description": "Babel visitor that makes it easier to work with imports and require calls.",
+  "description": "Easy-to-use API for manipulating imports and require calls.",
   "repository": {
     "type": "git",
     "url": "https://github.com/suchipi/run-on-server.git"
@@ -10,7 +10,9 @@
   "author": "Suchipi Izumi",
   "license": "MIT",
   "dependencies": {
-    "babel-core": "^6.26.0",
-    "babel-types": "^6.26.0"
+    "babel-traverse": "^6.26.0",
+    "babylon": "^6.18.0",
+    "imports-visitor": "1.0.0",
+    "recast": "^0.13.2"
   }
 }

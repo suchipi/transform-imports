@@ -1,7 +1,7 @@
 const traverse = require("babel-traverse").default;
 const recast = require("recast");
 const babylon = require("babylon");
-const importsVisitor = require("./visitor");
+const importsVisitor = require("imports-visitor");
 
 const parser = {
   parse(code, options) {

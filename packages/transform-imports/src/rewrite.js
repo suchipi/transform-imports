@@ -1,5 +1,5 @@
 // @flow
-const transformImports = require("./transformImports");
+const transformImports = require("./index");
 
 module.exports = function rewrite(
   code: string,

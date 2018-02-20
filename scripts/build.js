@@ -21,5 +21,5 @@ pkgsWithSrc.forEach((pkgPath) => {
   console.log(chalk.blue(pkgPath));
   cd(path.resolve(__dirname, "..", pkgPath));
   rm("-rf", "dist/*");
-  exec(`${bin("babel")} src -d dist`);
+  exec(`${bin("babel")} src -d dist --ignore *.test.js`);
 });

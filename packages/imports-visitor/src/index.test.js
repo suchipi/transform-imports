@@ -1,5 +1,6 @@
-const transformImports = require("./transformImports");
 const cases = require("jest-in-case");
+const babel = require("babel-core");
+const importsVisitor = require("./index");
 
 const clean = (str) =>
   str
@@ -7,6 +8,22 @@ const clean = (str) =>
     .map((line) => line.trim())
     .filter(Boolean)
     .join(" ");
+
+function transformImports(code, callback) {
+  return babel.transform(code, {
+    plugins: [
+      () => ({
+        visitor: {
+          Program(path) {
+            const imports = [];
+            path.traverse(importsVisitor, { imports });
+            callback(imports);
+          },
+        },
+      }),
+    ],
+  }).code;
+}
 
 cases(
   "basic parsing works",
@@ -791,50 +808,6 @@ cases(
       code: `const { foo } = require("foo");`,
       newName: "bar",
       output: `const { bar } = require("foo");`,
-    },
-  ]
-);
-
-cases(
-  "smoke tests",
-  ({ code, action, output }) => {
-    const actualOutput = transformImports(code, action);
-    expect(clean(actualOutput)).toBe(clean(output));
-  },
-  [
-    {
-      code: `
-        import React, { PropTypes } from "react";
-        import App from "./App";
-
-        console.log(  "this is unrelated" );
-      `,
-      action: (imports) => {
-        imports.filter((def) => def.source === "react").forEach((def) => {
-          if (
-            def.importedExport.name === "default" &&
-            def.importedExport.isImportedAsCJS === false
-          ) {
-            def.fork({ insert: "before" });
-            def.importedExport.name = "*";
-          }
-
-          if (
-            def.variableName === "PropTypes" &&
-            def.importedExport.name === "PropTypes"
-          ) {
-            def.importedExport.name = "default";
-            def.source = "prop-types";
-          }
-        });
-      },
-      output: `
-        import * as React from "react";
-        import PropTypes from "prop-types";
-        import App from "./App";
-
-        console.log(  "this is unrelated" );
-      `,
     },
   ]
 );
