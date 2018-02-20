@@ -1,10 +1,13 @@
 #!/usr/bin/env node
+// @flow
+
 const process = require("./process");
 const argv = require("yargs")
   .option("files", {
     type: "string",
     describe: "glob of files to process",
   })
+  .demandOption("files", "the files glob is required")
   .option("matchSourceRegExp", {
     type: "string",
     describe: "target imports whose source matches this Regular Expression",
@@ -47,5 +50,18 @@ const argv = require("yargs")
     type: "boolean",
     describe: "convert the targeted imports to ES2015 import statements",
   });
+
+export type Argv = {
+  files: string, // glob
+  matchSourceRegExp?: string, // RegExp source
+  matchSourceFile?: string, // relative path
+  matchVariableName?: string, // RegExp source
+  matchImportedExportName?: string, // RegExp source
+  setSource?: string,
+  setVariableName?: string,
+  setImportedExportName?: string,
+  convertToImport?: boolean,
+  convertToRequire?: boolean,
+};
 
 process(argv);
