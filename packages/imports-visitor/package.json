@@ -4,7 +4,7 @@
   "description": "Babel visitor that makes it easier to work with imports and require calls.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/suchipi/run-on-server.git"
+    "url": "https://github.com/suchipi/transform-imports.git"
   },
   "main": "dist/index.js",
   "author": "Suchipi Izumi",
