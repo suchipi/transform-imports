@@ -14,5 +14,8 @@
     "babylon": "^6.18.0",
     "imports-visitor": "1.0.0",
     "recast": "^0.13.2"
+  },
+  "devDependencies": {
+    "jest-in-case": "^1.0.2"
   }
 }
