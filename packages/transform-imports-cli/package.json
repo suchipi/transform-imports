@@ -10,6 +10,17 @@
   "main": "dist/index.js",
   "author": "Suchipi Izumi",
   "license": "MIT",
+  "keywords": [
+    "transform",
+    "codemod",
+    "rewrite",
+    "import",
+    "require",
+    "recast",
+    "babel",
+    "jscodeshift",
+    "rename"
+  ],
   "dependencies": {
     "globby": "^8.0.1",
     "transform-imports": "1.0.0",

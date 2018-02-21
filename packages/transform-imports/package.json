@@ -9,6 +9,17 @@
   "main": "dist/index.js",
   "author": "Suchipi Izumi",
   "license": "MIT",
+  "keywords": [
+    "transform",
+    "codemod",
+    "rewrite",
+    "import",
+    "require",
+    "recast",
+    "babel",
+    "jscodeshift",
+    "rename"
+  ],
   "dependencies": {
     "babel-traverse": "^6.26.0",
     "babylon": "^6.18.0",
