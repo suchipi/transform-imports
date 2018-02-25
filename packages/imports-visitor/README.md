@@ -64,6 +64,7 @@ ImportDefinition {
     name: "*",
     isImportedAsCJS: false,
   },
+  kind: "value",
 };
 
 import traverse from "babel-traverse";
@@ -75,6 +76,7 @@ ImportDefinition {
     name: "default",
     isImportedAsCJS: false,
   },
+  kind: "value",
 };
 
 import MyClass, { SOME_CONSTANT } from "my-library";
@@ -86,6 +88,7 @@ ImportDefinition {
     name: "default",
     isImportedAsCJS: false,
   },
+  kind: "value",
 };
 // and
 ImportDefinition {
@@ -95,6 +98,7 @@ ImportDefinition {
     name: "SOME_CONSTANT",
     isImportedAsCJS: false,
   },
+  kind: "value",
 };
 
 const PropTypes = require("prop-types");
@@ -106,6 +110,7 @@ ImportDefinition {
     name: "*",
     isImportedAsCJS: true,
   },
+  kind: "value",
 };
 
 const { darken, lighten } = require("polished");
@@ -117,6 +122,7 @@ ImportDefinition {
     name: "darken",
     isImportedAsCJS: true,
   },
+  kind: "value",
 };
 // and
 ImportDefinition {
@@ -126,6 +132,19 @@ ImportDefinition {
     name: "lighten",
     isImportedAsCJS: true,
   },
+  kind: "value",
+};
+
+import type {Node} from "./node";
+// Becomes...
+ImportDefinition {
+  variableName: "Node",
+  source: "./node",
+  importedExport: {
+    name: "Node",
+    isImportedAsCJS: false,
+  },
+  kind: "type",
 };
 ```
 

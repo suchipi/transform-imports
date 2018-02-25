@@ -7,7 +7,10 @@ An API that makes it easy to transform imports and require calls.
 ```js
 import transformImports from "transform-imports";
 
-const code = `import Foo from "bar";`;
+const code = `
+  import Foo from "foo";
+  import Bar from "bar";
+`;
 
 const newCode = transformImports(code, (importDef) => {
   if (importDef.source === "bar") {
@@ -15,7 +18,10 @@ const newCode = transformImports(code, (importDef) => {
   }
 });
 
-console.log(newCode); // import Foo from "something-new";
+console.log(newCode);
+// Logs:
+// import Foo from "foo";
+// import Foo from "something-new";
 ```
 
 `transformImports` calls its callback with `ImportDefinition` objects, which have this shape:
@@ -52,6 +58,7 @@ ImportDefinition {
     name: "*",
     isImportedAsCJS: false,
   },
+  kind: "value",
 };
 
 import traverse from "babel-traverse";
@@ -63,6 +70,7 @@ ImportDefinition {
     name: "default",
     isImportedAsCJS: false,
   },
+  kind: "value",
 };
 
 import MyClass, { SOME_CONSTANT } from "my-library";
@@ -74,6 +82,7 @@ ImportDefinition {
     name: "default",
     isImportedAsCJS: false,
   },
+  kind: "value",
 };
 // and
 ImportDefinition {
@@ -83,6 +92,7 @@ ImportDefinition {
     name: "SOME_CONSTANT",
     isImportedAsCJS: false,
   },
+  kind: "value",
 };
 
 const PropTypes = require("prop-types");
@@ -94,6 +104,7 @@ ImportDefinition {
     name: "*",
     isImportedAsCJS: true,
   },
+  kind: "value",
 };
 
 const { darken, lighten } = require("polished");
@@ -105,6 +116,7 @@ ImportDefinition {
     name: "darken",
     isImportedAsCJS: true,
   },
+  kind: "value",
 };
 // and
 ImportDefinition {
@@ -114,10 +126,23 @@ ImportDefinition {
     name: "lighten",
     isImportedAsCJS: true,
   },
+  kind: "value",
+};
+
+import type {Node} from "./node";
+// Becomes...
+ImportDefinition {
+  variableName: "Node",
+  source: "./node",
+  importedExport: {
+    name: "Node",
+    isImportedAsCJS: false,
+  },
+  kind: "type",
 };
 ```
 
-Here's some more in-depth documentation explaining what each property means/does. In each example, `importDef` refers to an `ImportDefinition` object obtained from the array passed in to `path.traverse`.
+Here's some more in-depth documentation explaining what each property means/does. In each example, `importDef` refers to an `ImportDefinition` object as passed to the `transformImports` callback.
 
 ### `variableName`
 
