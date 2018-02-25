@@ -518,7 +518,8 @@ cases(
   ({ code, output, index }) => {
     const actualOutput = transformImports(code, (imports) => {
       const importDef = imports[index || 0];
-      importDef.source = "new-source";
+      const ret = (importDef.source = "new-source");
+      expect(ret).toBe("new-source");
     });
     expect(clean(actualOutput)).toBe(clean(output));
   },
@@ -606,7 +607,8 @@ cases(
   ({ code, output, index }) => {
     const actualOutput = transformImports(code, (imports) => {
       const importDef = imports[index || 0];
-      importDef.variableName = "newVar";
+      const ret = (importDef.variableName = "newVar");
+      expect(ret).toBe("newVar");
     });
 
     expect(clean(actualOutput)).toBe(clean(output));
@@ -677,7 +679,8 @@ cases(
   ({ code, importedExport, output, index }) => {
     const actualOutput = transformImports(code, (imports) => {
       const importDef = imports[index || 0];
-      importDef.importedExport = importedExport;
+      const ret = (importDef.importedExport = importedExport);
+      expect(ret).toEqual(importedExport);
     });
 
     expect(clean(actualOutput)).toBe(clean(output));
@@ -888,7 +891,8 @@ cases(
   ({ code, kind, output, index }) => {
     const actualOutput = transformImports(code, (imports) => {
       const importDef = imports[index || 0];
-      importDef.kind = kind;
+      const ret = (importDef.kind = kind);
+      expect(ret).toBe(kind);
     });
 
     expect(clean(actualOutput)).toBe(clean(output));

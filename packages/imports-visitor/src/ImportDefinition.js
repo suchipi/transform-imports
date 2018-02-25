@@ -43,6 +43,8 @@ class ImportDefinition {
         enumerable: false,
       });
     }
+
+    return newPath;
   }
 
   get source() {
@@ -234,6 +236,10 @@ class ImportDefinition {
     return null;
   }
   set variableName(newName) {
+    if (newName === this.variableName) {
+      return newName;
+    }
+
     const path = this.path;
 
     if (path.isImportDefaultSpecifier() || path.isImportNamespaceSpecifier()) {
@@ -255,7 +261,8 @@ class ImportDefinition {
       );
     }
 
-    return null;
+    return newName;
+  }
 
   get kind() {
     const path = this.path;
