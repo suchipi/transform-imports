@@ -25,6 +25,7 @@
     "babel-types": "^6.26.0"
   },
   "devDependencies": {
+    "babel-plugin-syntax-flow": "^6.18.0",
     "jest-in-case": "^1.0.2"
   }
 }

@@ -256,6 +256,53 @@ class ImportDefinition {
     }
 
     return null;
+
+  get kind() {
+    const path = this.path;
+
+    if (
+      path.isImportDefaultSpecifier() ||
+      path.isImportNamespaceSpecifier() ||
+      path.isImportSpecifier()
+    ) {
+      const declaration = path.findParent((parent) =>
+        parent.isImportDeclaration()
+      );
+      return declaration.node.importKind || "value";
+    } else {
+      return "value";
+    }
+  }
+  set kind(newKind) {
+    if (newKind === this.kind) {
+      return newKind;
+    }
+
+    if (!(newKind === "value" || newKind === "type" || newKind === "typeof")) {
+      throw new Error(
+        "kind can only be set to 'value', 'type', or 'typeof'. Attempted to " +
+          `set it to: ${newKind}`
+      );
+    }
+
+    if (
+      this.path.isImportDefaultSpecifier() ||
+      this.path.isImportNamespaceSpecifier() ||
+      this.path.isImportSpecifier()
+    ) {
+      this.fork();
+      const declaration = this.path.findParent((parent) =>
+        parent.isImportDeclaration()
+      );
+      declaration.node.importKind = newKind;
+    } else {
+      // Transform into import declaration
+      this.importedExport.isImportedAsCJS = false;
+      // Re-call the setter; this time it'll go down the other path
+      this.kind = newKind;
+    }
+
+    return newKind;
   }
 
   remove() {

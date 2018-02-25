@@ -11,7 +11,9 @@ const clean = (str) =>
 
 function transformImports(code, callback) {
   return babel.transform(code, {
+    babelrc: false,
     plugins: [
+      "babel-plugin-syntax-flow",
       () => ({
         visitor: {
           Program(path) {
@@ -30,9 +32,9 @@ cases(
   ({ code, imports }) => {
     transformImports(code, (actualImports) => {
       imports.forEach((importDef, index) => {
-        expect(actualImports[index]).toEqual(
-          expect.objectContaining(importDef)
-        );
+        Object.keys(importDef).forEach((key) => {
+          expect(actualImports[index]).toHaveProperty(key, importDef[key]);
+        });
       });
     });
   },
@@ -52,6 +54,7 @@ cases(
             name: "default",
             isImportedAsCJS: false,
           },
+          kind: "value",
           path: expect.any(Object),
         },
         {
@@ -61,6 +64,7 @@ cases(
             name: "zoop",
             isImportedAsCJS: false,
           },
+          kind: "value",
           path: expect.any(Object),
         },
         {
@@ -70,6 +74,7 @@ cases(
             name: "zow",
             isImportedAsCJS: false,
           },
+          kind: "value",
           path: expect.any(Object),
         },
         {
@@ -79,6 +84,7 @@ cases(
             name: "*",
             isImportedAsCJS: false,
           },
+          kind: "value",
           path: expect.any(Object),
         },
       ],
@@ -97,6 +103,7 @@ cases(
             name: "*",
             isImportedAsCJS: true,
           },
+          kind: "value",
           path: expect.any(Object),
         },
         {
@@ -106,6 +113,7 @@ cases(
             name: "zoop",
             isImportedAsCJS: true,
           },
+          kind: "value",
           path: expect.any(Object),
         },
         {
@@ -115,6 +123,7 @@ cases(
             name: "zow",
             isImportedAsCJS: true,
           },
+          kind: "value",
           path: expect.any(Object),
         },
       ],
@@ -134,6 +143,7 @@ cases(
             name: "*",
             isImportedAsCJS: true,
           },
+          kind: "value",
           path: expect.any(Object),
         },
         {
@@ -143,6 +153,7 @@ cases(
             name: "bar",
             isImportedAsCJS: true,
           },
+          kind: "value",
           path: expect.any(Object),
         },
         {
@@ -152,6 +163,36 @@ cases(
             name: null,
             isImportedAsCJS: true,
           },
+          kind: "value",
+          path: expect.any(Object),
+        },
+      ],
+    },
+    {
+      name: "Flow support",
+      code: `
+        import type { Something } from "somewhere";
+        import typeof SomethingElse from "somewhere-else";
+      `,
+      imports: [
+        {
+          source: "somewhere",
+          variableName: "Something",
+          importedExport: {
+            name: "Something",
+            isImportedAsCJS: false,
+          },
+          kind: "type",
+          path: expect.any(Object),
+        },
+        {
+          source: "somewhere-else",
+          variableName: "SomethingElse",
+          importedExport: {
+            name: "default",
+            isImportedAsCJS: false,
+          },
+          kind: "typeof",
           path: expect.any(Object),
         },
       ],
@@ -191,6 +232,36 @@ cases(
       name: "require call (destructured)",
       code: `const { foo } = require("bar");`,
       type: "ObjectProperty",
+    },
+    {
+      name: "flow type import declaration - default specifier",
+      code: `import type foo from "bar";`,
+      type: "ImportDefaultSpecifier",
+    },
+    {
+      name: "flow type import declaration - named specifier",
+      code: `import type { foo } from "bar";`,
+      type: "ImportSpecifier",
+    },
+    {
+      name: "flow type import declaration - star specifier",
+      code: `import type * as foo from "bar";`,
+      type: "ImportNamespaceSpecifier",
+    },
+    {
+      name: "flow typeof import declaration - default specifier",
+      code: `import typeof foo from "bar";`,
+      type: "ImportDefaultSpecifier",
+    },
+    {
+      name: "flow typeof import declaration - named specifier",
+      code: `import typeof { foo } from "bar";`,
+      type: "ImportSpecifier",
+    },
+    {
+      name: "flow typeof import declaration - star specifier",
+      code: `import typeof * as foo from "bar";`,
+      type: "ImportNamespaceSpecifier",
     },
   ]
 );
@@ -808,6 +879,283 @@ cases(
       code: `const { foo } = require("foo");`,
       newName: "bar",
       output: `const { bar } = require("foo");`,
+    },
+  ]
+);
+
+cases(
+  "changing kind",
+  ({ code, kind, output, index }) => {
+    const actualOutput = transformImports(code, (imports) => {
+      const importDef = imports[index || 0];
+      importDef.kind = kind;
+    });
+
+    expect(clean(actualOutput)).toBe(clean(output));
+  },
+  [
+    {
+      name: "import declaration - lone default specifier - type",
+      code: `import foo from "bar";`,
+      kind: "type",
+      output: `import type foo from "bar";`,
+    },
+    {
+      name: "import declaration - lone default specifier - typeof",
+      code: `import foo from "bar";`,
+      kind: "typeof",
+      output: `import typeof foo from "bar";`,
+    },
+    {
+      name: "import declaration - lone default specifier - value",
+      code: `import type foo from "bar";`,
+      kind: "value",
+      output: `import foo from "bar";`,
+    },
+    {
+      name: "import declaration - lone named specifier - type",
+      code: `import { foo } from "bar";`,
+      kind: "type",
+      output: `import type { foo } from "bar";`,
+    },
+    {
+      name: "import declaration - lone named specifier - typeof",
+      code: `import { foo } from "bar";`,
+      kind: "typeof",
+      output: `import typeof { foo } from "bar";`,
+    },
+    {
+      name: "import declaration - lone named specifier - value",
+      code: `import type { foo } from "bar";`,
+      kind: "value",
+      output: `import { foo } from "bar";`,
+    },
+    {
+      name: "import declaration - lone star specifier - type",
+      code: `import * as foo from "bar";`,
+      kind: "type",
+      output: `import type * as foo from "bar";`,
+    },
+    {
+      name: "import declaration - lone star specifier - typeof",
+      code: `import * as foo from "bar";`,
+      kind: "typeof",
+      output: `import typeof * as foo from "bar";`,
+    },
+    {
+      name: "import declaration - lone star specifier - value",
+      code: `import type * as foo from "bar";`,
+      kind: "value",
+      output: `import * as foo from "bar";`,
+    },
+    {
+      name:
+        "import declaration - default specifier with named specifier - type",
+      code: `import foo, { bar } from "bar";`,
+      kind: "type",
+      output: `
+        import { bar } from "bar";
+        import type foo from "bar";
+      `,
+    },
+    {
+      name:
+        "import declaration - default specifier with named specifier - typeof",
+      code: `import foo, { bar } from "bar";`,
+      kind: "typeof",
+      output: `
+        import { bar } from "bar";
+        import typeof foo from "bar";
+      `,
+    },
+    {
+      name:
+        "import declaration - default specifier with named specifier - value",
+      code: `import typeof foo, { bar } from "bar";`,
+      kind: "value",
+      output: `
+        import typeof { bar } from "bar";
+        import foo from "bar";
+      `,
+    },
+    {
+      name: "import declaration - default specifier with star specifier - type",
+      code: `import foo, * as bar from "bar";`,
+      kind: "type",
+      output: `
+        import * as bar from "bar";
+        import type foo from "bar";
+      `,
+    },
+    {
+      name:
+        "import declaration - default specifier with star specifier - typeof",
+      code: `import foo, * as bar from "bar";`,
+      kind: "typeof",
+      output: `
+        import * as bar from "bar";
+        import typeof foo from "bar";
+      `,
+    },
+    {
+      name:
+        "import declaration - default specifier with star specifier - value",
+      code: `import type foo, * as bar from "bar";`,
+      kind: "value",
+      output: `
+        import type * as bar from "bar";
+        import foo from "bar";
+      `,
+    },
+    {
+      name: "import declaration - two named specifiers - type",
+      code: `import { foo, bar } from "bar";`,
+      kind: "type",
+      output: `
+        import { bar } from "bar";
+        import type { foo } from "bar";
+      `,
+    },
+    {
+      name: "import declaration - two named specifiers - typeof",
+      code: `import { foo, bar } from "bar";`,
+      kind: "typeof",
+      output: `
+        import { bar } from "bar";
+        import typeof { foo } from "bar";
+      `,
+    },
+    {
+      name: "import declaration - two named specifiers - value",
+      code: `import type { foo, bar } from "bar";`,
+      kind: "value",
+      output: `
+        import type { bar } from "bar";
+        import { foo } from "bar";
+      `,
+    },
+    {
+      name:
+        "import declaration - named specifier with default specifier - type",
+      code: `import foo, { bar } from "bar";`,
+      kind: "type",
+      output: `
+        import foo from "bar";
+        import type { bar } from "bar";
+      `,
+      index: 1,
+    },
+    {
+      name:
+        "import declaration - named specifier with default specifier - typeof",
+      code: `import foo, { bar } from "bar";`,
+      kind: "typeof",
+      output: `
+        import foo from "bar";
+        import typeof { bar } from "bar";
+      `,
+      index: 1,
+    },
+    {
+      name:
+        "import declaration - named specifier with default specifier - value",
+      code: `import type foo, { bar } from "bar";`,
+      kind: "value",
+      output: `
+        import type foo from "bar";
+        import { bar } from "bar";
+      `,
+      index: 1,
+    },
+    {
+      name: "import declaration - star specifier with default export - type",
+      code: `import bar, * as foo from "bar";`,
+      kind: "type",
+      output: `
+        import bar from "bar";
+        import type * as foo from "bar";
+      `,
+      index: 1,
+    },
+    {
+      name: "import declaration - star specifier with default export - typeof",
+      code: `import bar, * as foo from "bar";`,
+      kind: "typeof",
+      output: `
+        import bar from "bar";
+        import typeof * as foo from "bar";
+      `,
+      index: 1,
+    },
+    {
+      name: "import declaration - star specifier with default export - value",
+      code: `import type bar, * as foo from "bar";`,
+      kind: "value",
+      output: `
+        import type bar from "bar";
+        import * as foo from "bar";
+      `,
+      index: 1,
+    },
+    {
+      name: "require call - type",
+      code: `const foo = require("bar");`,
+      kind: "type",
+      output: `import type * as foo from "bar";`,
+    },
+    {
+      name: "require call - typeof",
+      code: `const foo = require("bar");`,
+      kind: "typeof",
+      output: `import typeof * as foo from "bar";`,
+    },
+    {
+      name: "require call - value (no change)",
+      code: `const foo = require("bar");`,
+      kind: "value",
+      output: `const foo = require("bar");`,
+    },
+    {
+      name: "destructured require call - lone - type",
+      code: `const { foo } = require("bar");`,
+      kind: "type",
+      output: `import type { foo } from "bar";`,
+    },
+    {
+      name: "destructured require call - lone - typeof",
+      code: `const { foo } = require("bar");`,
+      kind: "typeof",
+      output: `import typeof { foo } from "bar";`,
+    },
+    {
+      name: "destructured require call - lone - value (no change)",
+      code: `const { foo } = require("bar");`,
+      kind: "value",
+      output: `const { foo } = require("bar");`,
+    },
+    {
+      name: "destructured require call - not lone - type",
+      code: `const { foo, bar } = require("bar");`,
+      kind: "type",
+      output: `
+        const { bar } = require("bar");
+        import type { foo } from "bar";
+      `,
+    },
+    {
+      name: "destructured require call - not lone - typeof",
+      code: `const { foo, bar } = require("bar");`,
+      kind: "typeof",
+      output: `
+        const { bar } = require("bar");
+        import typeof { foo } from "bar";
+      `,
+    },
+    {
+      name: "destructured require call - not lone - value (no change)",
+      code: `const { foo, bar } = require("bar");`,
+      kind: "value",
+      output: `const { foo, bar } = require("bar");`,
     },
   ]
 );
