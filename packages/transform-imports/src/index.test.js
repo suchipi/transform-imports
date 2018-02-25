@@ -50,5 +50,17 @@ cases(
         console.log(  "this is unrelated" );
       `,
     },
+    {
+      name: "Change named import into type import",
+      code: `
+        import { Something } from "somewhere";
+      `,
+      action: (imports) => {
+        imports[0].kind = "type";
+      },
+      output: `
+        import type { Something } from "somewhere";
+      `,
+    },
   ]
 );

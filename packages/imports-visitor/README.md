@@ -40,6 +40,7 @@ class ImportDefinition {
     name: string,
     isImportedAsCJS: boolean,
   };
+  kind: "value" | "type" | "typeof",
   path: NodePath;
 
   remove(): void;
@@ -293,6 +294,48 @@ import { Some, Members } from "members";
 ```
 
 Note that in `const Foo = require("foo")`, `importedExport.name` is `"*"`, not `"default"` like might be expected. This is because `"*"` is the most accurate representation of the way CommonJS imports work in most compilation pipelines.
+
+### `kind`
+
+This value indicates whether the import is a flow type/typeof import, or if it is a normal import (a value import). Possible values are `"type"`, `"typeof"`, and `"value"`. Changing this value will change the import into a type, typeof, or value import.
+
+```js
+// Given this code:
+import Default from "somewhere";
+import * as Star from "somewhere-else";
+import { Named } from "somewhere-else-else";
+
+// If you did this to each ImportDefinition:
+importDef.kind = "type";
+
+// Then the code would change into this:
+import type Default from "somewhere";
+import type * as Star from "somewhere-else";
+import type { Named } from "somewhere-else-else";
+
+// Likewise, if you did this to each ImportDefinition:
+importDef.kind = "typeof";
+
+// Then the code would change into this:
+import typeof Default from "somewhere";
+import typeof * as Star from "somewhere-else";
+import typeof { Named } from "somewhere-else-else";
+```
+
+If you change a require call's kind into type or typeof, then it will turn into an import statement according to the rules established when changing `importedExport.isImportedAsCJS`:
+
+```js
+// Given this code:
+const All = require("all");
+const { Some, Members } = require("members");
+
+// If you did this to each ImportDefinition:
+importDef.kind = "type";
+
+// Then the code would change into this:
+import type * as All from "all";
+import type { Some, Members } from "members";
+```
 
 ### `remove()`
 

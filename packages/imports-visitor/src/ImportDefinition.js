@@ -10,7 +10,9 @@ class ImportDefinition {
       this.source
     }", importedExport: { name: "${
       this.importedExport.name
-    }", isImportedAsCJS: ${this.importedExport.isImportedAsCJS} } }`;
+    }", isImportedAsCJS: ${this.importedExport.isImportedAsCJS} }, kind: "${
+      this.kind
+    }" }`;
   }
 
   get path() {
