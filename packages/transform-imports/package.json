@@ -1,6 +1,6 @@
 {
   "name": "transform-imports",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Easy-to-use API for manipulating imports and require calls.",
   "repository": {
     "type": "git",
@@ -23,7 +23,7 @@
   "dependencies": {
     "babel-traverse": "^6.26.0",
     "babylon": "^6.18.0",
-    "imports-visitor": "1.1.0",
+    "imports-visitor": "1.2.0",
     "recast": "^0.13.2"
   },
   "devDependencies": {

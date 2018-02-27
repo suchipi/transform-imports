@@ -24,7 +24,8 @@ class ImportDefinition {
       newPath.isObjectProperty() || // const { `foo` } = require("bar");
       newPath.isImportDefaultSpecifier() || // import `foo` from "bar";
       newPath.isImportSpecifier() || // import `{ foo }` from "bar";
-      newPath.isImportNamespaceSpecifier(); // import `* as foo` from "bar";
+      newPath.isImportNamespaceSpecifier() || // import `* as foo` from "bar";
+      newPath.isImport(); // `import("bar")`;
 
     if (!isValidPath) {
       throw new Error(
@@ -71,6 +72,9 @@ class ImportDefinition {
       return getSourceForVariableDeclarator(path);
     } else if (path.isObjectProperty()) {
       return getSourceForVariableDeclarator(path.parentPath.parentPath);
+    } else if (path.isImport()) {
+      return path.findParent((parent) => parent.isCallExpression()).node
+        .arguments[0].value;
     }
 
     return null;
@@ -92,6 +96,11 @@ class ImportDefinition {
         parent.isVariableDeclarator()
       );
       declarator.node.init.arguments[0] = t.stringLiteral(newSource);
+    } else if (path.isImport()) {
+      const callExpression = path.findParent((parent) =>
+        parent.isCallExpression()
+      );
+      callExpression.node.arguments[0] = t.stringLiteral(newSource);
     }
 
     return newSource;
@@ -112,6 +121,8 @@ class ImportDefinition {
       def = { name: "*", isImportedAsCJS: true };
     } else if (path.isObjectProperty() && path.get("key").isIdentifier()) {
       def = { name: path.node.key.name, isImportedAsCJS: true };
+    } else if (path.isImport()) {
+      def = { name: "*", isImportedAsCJS: false };
     } else {
       def = { name: null, isImportedAsCJS: true };
     }
@@ -143,6 +154,17 @@ class ImportDefinition {
     const current = this.importedExport;
     if (name === current.name && isImportedAsCJS === current.isImportedAsCJS) {
       return;
+    }
+
+    if (this.path.isImport()) {
+      throw new Error(
+        "Attempted to change the importedExport of an ImportDefinition " +
+          `referring to a dynamic import statement (import("${
+            this.source
+          }")). ` +
+          "The only property that can be changed programmatically on a dynamic " +
+          "import is source."
+      );
     }
 
     // We don't technically need to always fork here, but it's just less to
@@ -244,6 +266,17 @@ class ImportDefinition {
 
     const path = this.path;
 
+    if (this.path.isImport()) {
+      throw new Error(
+        "Attempted to change the variableName of an ImportDefinition " +
+          `referring to a dynamic import statement (import("${
+            this.source
+          }")). ` +
+          "The only property that can be changed programmatically on a dynamic " +
+          "import is source."
+      );
+    }
+
     if (path.isImportDefaultSpecifier() || path.isImportNamespaceSpecifier()) {
       path.node.local = t.identifier(newName);
     } else if (path.isImportSpecifier()) {
@@ -294,6 +327,17 @@ class ImportDefinition {
       );
     }
 
+    if (this.path.isImport()) {
+      throw new Error(
+        "Attempted to change the kind of an ImportDefinition " +
+          `referring to a dynamic import statement (import("${
+            this.source
+          }")). ` +
+          "The only property that can be changed programmatically on a dynamic " +
+          "import is source."
+      );
+    }
+
     if (
       this.path.isImportDefaultSpecifier() ||
       this.path.isImportNamespaceSpecifier() ||
@@ -315,6 +359,17 @@ class ImportDefinition {
   }
 
   remove() {
+    if (this.path.isImport()) {
+      throw new Error(
+        "Attempted to remove an ImportDefinition " +
+          `referring to a dynamic import statement (import("${
+            this.source
+          }")). ` +
+          "Dynamic imports can be used in a myriad of ways and therefore " +
+          "automated removal is not supported."
+      );
+    }
+
     const statementSiblings = this.path.parentPath.get(this.path.listKey);
     if (statementSiblings.length === 1) {
       // We're the only VariableDeclarator/ImportSpecifier/ObjectProperty within
@@ -406,6 +461,9 @@ class ImportDefinition {
     if (path.isVariableDeclarator()) {
       // Even though VariableDeclarators are siblings within a
       // VariableDeclaration, they can be modified as independent imports.
+      return [path];
+    } else if (path.isImport()) {
+      // Dynamic imports are always alone.
       return [path];
     } else if (
       path.isImportDefaultSpecifier() ||

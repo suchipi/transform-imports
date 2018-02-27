@@ -14,6 +14,7 @@ function transformImports(code, callback) {
     babelrc: false,
     plugins: [
       "babel-plugin-syntax-flow",
+      "babel-plugin-syntax-dynamic-import",
       () => ({
         visitor: {
           Program(path) {
@@ -197,6 +198,37 @@ cases(
         },
       ],
     },
+    {
+      name: "Dynamic imports",
+      code: `
+        const importPromise = import("something");
+        import("something-else").then((mod) => {
+          console.log(mod.default);
+        });
+      `,
+      imports: [
+        {
+          source: "something",
+          variableName: null,
+          importedExport: {
+            name: "*",
+            isImportedAsCJS: false,
+          },
+          kind: "value",
+          path: expect.any(Object),
+        },
+        {
+          source: "something-else",
+          variableName: null,
+          importedExport: {
+            name: "*",
+            isImportedAsCJS: false,
+          },
+          kind: "value",
+          path: expect.any(Object),
+        },
+      ],
+    },
   ]
 );
 
@@ -263,16 +295,29 @@ cases(
       code: `import typeof * as foo from "bar";`,
       type: "ImportNamespaceSpecifier",
     },
+    {
+      name: "dynamic import",
+      code: `import("foo")`,
+      type: "Import",
+    },
   ]
 );
 
 cases(
   "remove method",
-  ({ code, output, index }) => {
-    const actualOutput = transformImports(code, (imports) => {
-      imports[index || 0].remove();
-    });
-    expect(clean(actualOutput)).toBe(clean(output));
+  ({ code, output, index, error }) => {
+    if (error) {
+      expect(() => {
+        transformImports(code, (imports) => {
+          imports[index || 0].remove();
+        });
+      }).toThrowError();
+    } else {
+      const actualOutput = transformImports(code, (imports) => {
+        imports[index || 0].remove();
+      });
+      expect(clean(actualOutput)).toBe(clean(output));
+    }
   },
   [
     {
@@ -331,6 +376,11 @@ cases(
       name: "destructured require call - not lone",
       code: `const { foo, bar } = require("bar");`,
       output: `const { bar } = require("bar");`,
+    },
+    {
+      name: "dynamic import - bare",
+      code: `import("foo")`,
+      error: true,
     },
   ]
 );
@@ -510,6 +560,11 @@ cases(
         const { bar } = require("bar");
       `,
     },
+    {
+      name: "dynamic import (no-op)",
+      code: `import("foo").then(console.log.bind(console));`,
+      output: `import("foo").then(console.log.bind(console));`,
+    },
   ]
 );
 
@@ -599,19 +654,32 @@ cases(
         const { foo } = require("new-source");
       `,
     },
+    {
+      name: "dynamic import",
+      code: `import("foo").then(console.log.bind(console));`,
+      output: `import("new-source").then(console.log.bind(console));`,
+    },
   ]
 );
 
 cases(
   "changing variableName",
-  ({ code, output, index }) => {
-    const actualOutput = transformImports(code, (imports) => {
-      const importDef = imports[index || 0];
-      const ret = (importDef.variableName = "newVar");
-      expect(ret).toBe("newVar");
-    });
+  ({ code, output, index, error }) => {
+    if (error) {
+      expect(() => {
+        transformImports(code, (imports) => {
+          imports[index || 0].variableName = "newVar";
+        });
+      }).toThrowError();
+    } else {
+      const actualOutput = transformImports(code, (imports) => {
+        const importDef = imports[index || 0];
+        const ret = (importDef.variableName = "newVar");
+        expect(ret).toBe("newVar");
+      });
 
-    expect(clean(actualOutput)).toBe(clean(output));
+      expect(clean(actualOutput)).toBe(clean(output));
+    }
   },
   [
     {
@@ -671,19 +739,32 @@ cases(
       code: `const { foo, bar } = require("bar");`,
       output: `const { foo: newVar, bar } = require("bar");`,
     },
+    {
+      name: "dynamic import",
+      code: `const promise = import("foo");`,
+      error: true,
+    },
   ]
 );
 
 cases(
   "changing importedExport",
-  ({ code, importedExport, output, index }) => {
-    const actualOutput = transformImports(code, (imports) => {
-      const importDef = imports[index || 0];
-      const ret = (importDef.importedExport = importedExport);
-      expect(ret).toEqual(importedExport);
-    });
+  ({ code, importedExport, output, index, error }) => {
+    if (error) {
+      expect(() => {
+        transformImports(code, (imports) => {
+          imports[index || 0].importedExport = importedExport;
+        });
+      }).toThrowError();
+    } else {
+      const actualOutput = transformImports(code, (imports) => {
+        const importDef = imports[index || 0];
+        const ret = (importDef.importedExport = importedExport);
+        expect(ret).toEqual(importedExport);
+      });
 
-    expect(clean(actualOutput)).toBe(clean(output));
+      expect(clean(actualOutput)).toBe(clean(output));
+    }
   },
   [
     // Changing default import into things
@@ -857,6 +938,12 @@ cases(
       importedExport: { name: "foo", isImportedAsCJS: true },
       output: `const { foo } = require("foo");`,
     },
+    // Dynamic import can't change
+    {
+      name: "dynamic import",
+      code: `import("foo").then((fooMod) => fooMod.default())`,
+      error: true,
+    },
   ]
 );
 
@@ -888,14 +975,22 @@ cases(
 
 cases(
   "changing kind",
-  ({ code, kind, output, index }) => {
-    const actualOutput = transformImports(code, (imports) => {
-      const importDef = imports[index || 0];
-      const ret = (importDef.kind = kind);
-      expect(ret).toBe(kind);
-    });
+  ({ code, kind, output, index, error }) => {
+    if (error) {
+      expect(() => {
+        transformImports(code, (imports) => {
+          imports[index || 0].kind = kind;
+        });
+      }).toThrowError();
+    } else {
+      const actualOutput = transformImports(code, (imports) => {
+        const importDef = imports[index || 0];
+        const ret = (importDef.kind = kind);
+        expect(ret).toBe(kind);
+      });
 
-    expect(clean(actualOutput)).toBe(clean(output));
+      expect(clean(actualOutput)).toBe(clean(output));
+    }
   },
   [
     {
@@ -1160,6 +1255,12 @@ cases(
       code: `const { foo, bar } = require("bar");`,
       kind: "value",
       output: `const { foo, bar } = require("bar");`,
+    },
+    {
+      name: "dynamic import",
+      code: `Promise.all([import("foo"), import("bar")]).then(load);`,
+      kind: "type",
+      error: true,
     },
   ]
 );

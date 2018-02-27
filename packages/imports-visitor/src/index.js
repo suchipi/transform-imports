@@ -41,6 +41,9 @@ const importsVisitor = {
       this.imports.push(new ImportDefinition(path));
     }
   },
+  Import(path, state) {
+    this.imports.push(new ImportDefinition(path));
+  },
 };
 
 module.exports = importsVisitor;
