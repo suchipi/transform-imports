@@ -24,7 +24,7 @@
     "babel-runtime": "^6.26.0",
     "babel-traverse": "^6.26.0",
     "babylon": "^6.18.0",
-    "imports-visitor": "1.2.0",
+    "imports-visitor": "1.2.1",
     "recast": "^0.13.2"
   },
   "devDependencies": {
