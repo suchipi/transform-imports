@@ -12,10 +12,12 @@ const code = `
   import Bar from "bar";
 `;
 
-const newCode = transformImports(code, (importDef) => {
-  if (importDef.source === "bar") {
-    importDef.source = "something-new";
-  }
+const newCode = transformImports(code, (importDefs) => {
+  importDefs.forEach((importDef) => {
+    if (importDef.source === "bar") {
+      importDef.source = "something-new";
+    }
+  });
 });
 
 console.log(newCode);
@@ -24,7 +26,7 @@ console.log(newCode);
 // import Foo from "something-new";
 ```
 
-`transformImports` calls its callback with `ImportDefinition` objects, which have this shape:
+`transformImports` calls its callback with an Array of `ImportDefinition` objects, which have this shape:
 
 ```ts
 class ImportDefinition {
@@ -463,26 +465,28 @@ import { One } from "most-numbers";
 const transformImports = require("transform-imports");
 
 module.exports = function(fileInfo, api, options) {
-  return transformImports(fileInfo.source, (importDef) => {
-    if (importDef.source !== "react") {
-      return;
-    }
+  return transformImports(fileInfo.source, (importDefs) => {
+    importDefs.forEach((importDef) => {
+      if (importDef.source !== "react") {
+        return;
+      }
 
-    if (
-      importDef.importedExport.name === "default" &&
-      importDef.importedExport.isImportedAsCJS === false
-    ) {
-      importDef.fork({ insert: "before" });
-      importDef.importedExport.name = "*";
-    }
+      if (
+        importDef.importedExport.name === "default" &&
+        importDef.importedExport.isImportedAsCJS === false
+      ) {
+        importDef.fork({ insert: "before" });
+        importDef.importedExport.name = "*";
+      }
 
-    if (
-      importDef.variableName === "PropTypes" &&
-      importDef.importedExport.name === "PropTypes"
-    ) {
-      importDef.importedExport.name = "default";
-      importDef.source = "prop-types";
-    }
+      if (
+        importDef.variableName === "PropTypes" &&
+        importDef.importedExport.name === "PropTypes"
+      ) {
+        importDef.importedExport.name = "default";
+        importDef.source = "prop-types";
+      }
+    });
   });
 };
 ```
