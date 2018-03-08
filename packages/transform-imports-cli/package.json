@@ -24,7 +24,7 @@
   "dependencies": {
     "babel-runtime": "^6.26.0",
     "globby": "^8.0.1",
-    "transform-imports": "1.2.0",
+    "transform-imports": "1.2.2",
     "yargs": "^11.0.0"
   }
 }
