@@ -46,6 +46,7 @@ cases(
         import foo from "bar";
         import { zoop, zow as zip } from "zeeoop";
         import * as star from "shooting-stars";
+        import "foo";
       `,
       imports: [
         {
@@ -84,6 +85,17 @@ cases(
         {
           source: "shooting-stars",
           variableName: "star",
+          importedExport: {
+            name: "*",
+            isImportedAsCJS: false,
+          },
+          kind: "value",
+          isDynamicImport: false,
+          path: expect.any(Object),
+        },
+        {
+          source: "foo",
+          variableName: null,
           importedExport: {
             name: "*",
             isImportedAsCJS: false,
@@ -579,6 +591,11 @@ cases(
       code: `import("foo").then(console.log.bind(console));`,
       output: `import("foo").then(console.log.bind(console));`,
     },
+    {
+      name: "bare import (no-op)",
+      code: `import "foo";`,
+      output: `import "foo";`,
+    },
   ]
 );
 
@@ -673,6 +690,11 @@ cases(
       code: `import("foo").then(console.log.bind(console));`,
       output: `import("new-source").then(console.log.bind(console));`,
     },
+    {
+      name: "bare import",
+      code: `import "foo"`,
+      output: `import "new-source";`,
+    },
   ]
 );
 
@@ -756,6 +778,11 @@ cases(
     {
       name: "dynamic import",
       code: `const promise = import("foo");`,
+      error: true,
+    },
+    {
+      name: "bare import",
+      code: `import "foo"`,
       error: true,
     },
   ]
@@ -952,10 +979,15 @@ cases(
       importedExport: { name: "foo", isImportedAsCJS: true },
       output: `const { foo } = require("foo");`,
     },
-    // Dynamic import can't change
+    // Dynamic import and bare import can't change
     {
       name: "dynamic import",
       code: `import("foo").then((fooMod) => fooMod.default())`,
+      error: true,
+    },
+    {
+      name: "bare import",
+      code: `import "foo";`,
       error: true,
     },
   ]
@@ -1273,6 +1305,12 @@ cases(
     {
       name: "dynamic import",
       code: `Promise.all([import("foo"), import("bar")]).then(load);`,
+      kind: "type",
+      error: true,
+    },
+    {
+      name: "bare import",
+      code: `import "foo";`,
       kind: "type",
       error: true,
     },

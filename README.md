@@ -30,8 +30,8 @@ console.log(newCode);
 
 ```ts
 class ImportDefinition {
-  variableName: string;
-  source: string;
+  variableName: ?string;
+  source: ?string;
   importedExport: {
     name: string,
     isImportedAsCJS: boolean,
@@ -152,6 +152,19 @@ ImportDefinition {
   isDynamicImport: false,
 };
 
+import "something";
+// Becomes...
+ImportDefinition {
+  variableName: null,
+  source: "something",
+  importedExport: {
+    name: "*",
+    isImportedAsCJS: false,
+  },
+  kind: "value",
+  isDynamicImport: false,
+};
+
 import("something").then((somethingModule) => somethingModule.default());
 // Becomes...
 ImportDefinition {
@@ -223,7 +236,7 @@ MyThing.isCool();
 
 If you want to also change references to the variable, you can use the babel Scope object found at `importDef.path.scope`.
 
-> NOTE: An `ImportDefinition` referring to a dynamic import (`import()`) has no `variableName`, and attempting to set the `variableName` will throw an Error.
+> NOTE: An `ImportDefinition` referring to a dynamic import (`import("foo")`) or bare import (`import "foo";`) has no `variableName`, and attempting to set the `variableName` will throw an Error.
 
 ### `source`
 
@@ -302,7 +315,7 @@ importDef.importedExport.name = "Bacon";
 import { Bacon as BaconStyle } from "./one";
 ```
 
-> NOTE: Attempting to change `importedExport.name` on an `ImportDefinition` referring to a dynamic import (`import()`) will throw an Error.
+> NOTE: Attempting to change `importedExport.name` on an `ImportDefinition` referring to a dynamic import (`import("foo")`) or bare import (`import "foo";`) will throw an Error.
 
 ### `importedExport.isImportedAsCJS`
 
@@ -336,7 +349,7 @@ import { Some, Members } from "members";
 
 Note that in `const Foo = require("foo")`, `importedExport.name` is `"*"`, not `"default"` like might be expected. This is because `"*"` is the most accurate representation of the way CommonJS imports work in most compilation pipelines.
 
-> NOTE: Attempting to change `importedExport.isImportedAsCJS` on an `ImportDefinition` referring to a dynamic import (`import()`) will throw an Error.
+> NOTE: Attempting to change `importedExport.isImportedAsCJS` on an `ImportDefinition` referring to a dynamic import (`import("foo")`) or bare import (`import "foo";`) will throw an Error.
 
 ### `kind`
 
@@ -380,7 +393,7 @@ import type * as All from "all";
 import type { Some, Members } from "members";
 ```
 
-> NOTE: Attempting to change `kind` on an `ImportDefinition` referring to a dynamic import (`import()`) will throw an Error.
+> NOTE: Attempting to change `kind` on an `ImportDefinition` referring to a dynamic import (`import("foo")`) or bare import (`import "foo";`) will throw an Error.
 
 ### `isDynamicImport`
 

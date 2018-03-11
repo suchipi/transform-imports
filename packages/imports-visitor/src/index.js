@@ -12,9 +12,14 @@ const ImportDefinition = require("./ImportDefinition");
 // },
 const importsVisitor = {
   ImportDeclaration(path, state) {
-    path.get("specifiers").forEach((specifier) => {
-      this.imports.push(new ImportDefinition(specifier));
-    });
+    const specifiers = path.get("specifiers");
+    if (specifiers.length === 0) {
+      this.imports.push(new ImportDefinition(path));
+    } else {
+      specifiers.forEach((specifier) => {
+        this.imports.push(new ImportDefinition(specifier));
+      });
+    }
   },
   VariableDeclarator(path, state) {
     if (
