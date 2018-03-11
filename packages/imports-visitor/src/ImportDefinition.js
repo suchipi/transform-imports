@@ -12,7 +12,7 @@ class ImportDefinition {
       this.importedExport.name
     }", isImportedAsCJS: ${this.importedExport.isImportedAsCJS} }, kind: "${
       this.kind
-    }" }`;
+    }", isDynamicImport: ${this.isDynamicImport} }`;
   }
 
   get path() {
@@ -356,6 +356,13 @@ class ImportDefinition {
     }
 
     return newKind;
+  }
+
+  get isDynamicImport() {
+    if (this.path.isImport()) {
+      return true;
+    }
+    return false;
   }
 
   remove() {

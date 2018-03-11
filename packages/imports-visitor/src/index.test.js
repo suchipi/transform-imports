@@ -56,6 +56,7 @@ cases(
             isImportedAsCJS: false,
           },
           kind: "value",
+          isDynamicImport: false,
           path: expect.any(Object),
         },
         {
@@ -66,6 +67,7 @@ cases(
             isImportedAsCJS: false,
           },
           kind: "value",
+          isDynamicImport: false,
           path: expect.any(Object),
         },
         {
@@ -76,6 +78,7 @@ cases(
             isImportedAsCJS: false,
           },
           kind: "value",
+          isDynamicImport: false,
           path: expect.any(Object),
         },
         {
@@ -86,6 +89,7 @@ cases(
             isImportedAsCJS: false,
           },
           kind: "value",
+          isDynamicImport: false,
           path: expect.any(Object),
         },
       ],
@@ -105,6 +109,7 @@ cases(
             isImportedAsCJS: true,
           },
           kind: "value",
+          isDynamicImport: false,
           path: expect.any(Object),
         },
         {
@@ -115,6 +120,7 @@ cases(
             isImportedAsCJS: true,
           },
           kind: "value",
+          isDynamicImport: false,
           path: expect.any(Object),
         },
         {
@@ -125,6 +131,7 @@ cases(
             isImportedAsCJS: true,
           },
           kind: "value",
+          isDynamicImport: false,
           path: expect.any(Object),
         },
       ],
@@ -145,6 +152,7 @@ cases(
             isImportedAsCJS: true,
           },
           kind: "value",
+          isDynamicImport: false,
           path: expect.any(Object),
         },
         {
@@ -155,6 +163,7 @@ cases(
             isImportedAsCJS: true,
           },
           kind: "value",
+          isDynamicImport: false,
           path: expect.any(Object),
         },
         {
@@ -165,6 +174,7 @@ cases(
             isImportedAsCJS: true,
           },
           kind: "value",
+          isDynamicImport: false,
           path: expect.any(Object),
         },
       ],
@@ -184,6 +194,7 @@ cases(
             isImportedAsCJS: false,
           },
           kind: "type",
+          isDynamicImport: false,
           path: expect.any(Object),
         },
         {
@@ -194,6 +205,7 @@ cases(
             isImportedAsCJS: false,
           },
           kind: "typeof",
+          isDynamicImport: false,
           path: expect.any(Object),
         },
       ],
@@ -215,6 +227,7 @@ cases(
             isImportedAsCJS: false,
           },
           kind: "value",
+          isDynamicImport: true,
           path: expect.any(Object),
         },
         {
@@ -225,6 +238,7 @@ cases(
             isImportedAsCJS: false,
           },
           kind: "value",
+          isDynamicImport: true,
           path: expect.any(Object),
         },
       ],

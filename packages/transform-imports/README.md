@@ -37,6 +37,7 @@ class ImportDefinition {
     isImportedAsCJS: boolean,
   };
   kind: "value" | "type" | "typeof",
+  isDynamicImport: boolean,
   path: NodePath;
 
   remove(): void;
@@ -61,6 +62,7 @@ ImportDefinition {
     isImportedAsCJS: false,
   },
   kind: "value",
+  isDynamicImport: false,
 };
 
 import traverse from "babel-traverse";
@@ -73,6 +75,7 @@ ImportDefinition {
     isImportedAsCJS: false,
   },
   kind: "value",
+  isDynamicImport: false,
 };
 
 import MyClass, { SOME_CONSTANT } from "my-library";
@@ -85,6 +88,7 @@ ImportDefinition {
     isImportedAsCJS: false,
   },
   kind: "value",
+  isDynamicImport: false,
 };
 // and
 ImportDefinition {
@@ -95,6 +99,7 @@ ImportDefinition {
     isImportedAsCJS: false,
   },
   kind: "value",
+  isDynamicImport: false,
 };
 
 const PropTypes = require("prop-types");
@@ -107,6 +112,7 @@ ImportDefinition {
     isImportedAsCJS: true,
   },
   kind: "value",
+  isDynamicImport: false,
 };
 
 const { darken, lighten } = require("polished");
@@ -119,6 +125,7 @@ ImportDefinition {
     isImportedAsCJS: true,
   },
   kind: "value",
+  isDynamicImport: false,
 };
 // and
 ImportDefinition {
@@ -129,6 +136,7 @@ ImportDefinition {
     isImportedAsCJS: true,
   },
   kind: "value",
+  isDynamicImport: false,
 };
 
 import type {Node} from "./node";
@@ -141,6 +149,7 @@ ImportDefinition {
     isImportedAsCJS: false,
   },
   kind: "type",
+  isDynamicImport: false,
 };
 
 import("something").then((somethingModule) => somethingModule.default());
@@ -153,6 +162,7 @@ ImportDefinition {
     isImportedAsCJS: false,
   },
   kind: "value",
+  isDynamicImport: true,
 };
 ```
 
@@ -371,6 +381,12 @@ import type { Some, Members } from "members";
 ```
 
 > NOTE: Attempting to change `kind` on an `ImportDefinition` referring to a dynamic import (`import()`) will throw an Error.
+
+### `isDynamicImport`
+
+Whether the import is a dynamic import (`import("something")`).
+
+This property is not writable.
 
 ### `remove()`
 
