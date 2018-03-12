@@ -196,6 +196,8 @@ cases(
       code: `
         import type { Something } from "somewhere";
         import typeof SomethingElse from "somewhere-else";
+        import { type Foo } from "foo";
+        import Bar, { typeof Baz } from "bar";
       `,
       imports: [
         {
@@ -214,6 +216,39 @@ cases(
           variableName: "SomethingElse",
           importedExport: {
             name: "default",
+            isImportedAsCJS: false,
+          },
+          kind: "typeof",
+          isDynamicImport: false,
+          path: expect.any(Object),
+        },
+        {
+          source: "foo",
+          variableName: "Foo",
+          importedExport: {
+            name: "Foo",
+            isImportedAsCJS: false,
+          },
+          kind: "type",
+          isDynamicImport: false,
+          path: expect.any(Object),
+        },
+        {
+          source: "bar",
+          variableName: "Bar",
+          importedExport: {
+            name: "default",
+            isImportedAsCJS: false,
+          },
+          kind: "value",
+          isDynamicImport: false,
+          path: expect.any(Object),
+        },
+        {
+          source: "bar",
+          variableName: "Baz",
+          importedExport: {
+            name: "Baz",
             isImportedAsCJS: false,
           },
           kind: "typeof",

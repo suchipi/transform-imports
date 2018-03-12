@@ -329,7 +329,7 @@ class ImportDefinition {
       const declaration = path.findParent((parent) =>
         parent.isImportDeclaration()
       );
-      return declaration.node.importKind || "value";
+      return path.node.importKind || declaration.node.importKind || "value";
     } else if (path.isImportDeclaration()) {
       return path.node.importKind || "value";
     } else {
