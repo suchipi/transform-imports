@@ -1,8 +1,0 @@
-{
-  "presets": ["env", "flow"],
-  "plugins": [
-    "transform-runtime",
-    "syntax-object-rest-spread",
-    "transform-object-rest-spread"
-  ]
-}

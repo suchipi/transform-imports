@@ -3,6 +3,8 @@ const fs = require("fs");
 const { exec } = require("shelljs");
 const packageJson = require("../package.json");
 
+const babelConfig = path.resolve(__dirname, "..", "babel.config.js");
+
 const bin = (name) =>
   path.resolve(__dirname, "..", "node_modules", ".bin", name);
 
@@ -27,12 +29,14 @@ exec(
           "'" +
           [
             bin("babel"),
+            "--config-file",
+            JSON.stringify(babelConfig),
             "-w",
             path.join(pkgPath, "src"),
             "-d",
             path.join(pkgPath, "dist"),
             "--ignore",
-            "*.test.js",
+            '"**/*.test.js"',
           ].join(" ") +
           "'"
       )

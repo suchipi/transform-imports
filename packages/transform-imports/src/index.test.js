@@ -1,4 +1,5 @@
 const cases = require("jest-in-case");
+const babelParser = require("@babel/parser");
 const transformImports = require("./index");
 
 const clean = (str) =>
@@ -64,3 +65,23 @@ cases(
     },
   ]
 );
+
+test("custom parser", () => {
+  const actualOutput = transformImports(
+    `
+    const foo = require("hi");
+    `,
+    (imports) => {
+      imports[0].source = "hello";
+    },
+    { parser: babelParser }
+  );
+
+  expect(clean(actualOutput)).toBe(
+    clean(
+      `
+      const foo = require("hello");
+      `
+    )
+  );
+});
