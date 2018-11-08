@@ -1,0 +1,28 @@
+{
+  "name": "import-types",
+  "version": "0.1.0",
+  "description": "Definitions for various types of module imports",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/suchipi/transform-imports.git"
+  },
+  "main": "dist/index.js",
+  "author": "Suchipi Izumi",
+  "license": "MIT",
+  "keywords": [
+    "transform",
+    "codemod",
+    "rewrite",
+    "import",
+    "require",
+    "recast",
+    "babel",
+    "jscodeshift",
+    "rename"
+  ],
+  "dependencies": {
+    "@babel/runtime": "^7.1.2"
+  },
+  "devDependencies": {
+  }
+}
