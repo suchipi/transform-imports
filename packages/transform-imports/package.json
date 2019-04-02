@@ -1,6 +1,6 @@
 {
   "name": "transform-imports",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Easy-to-use API for manipulating imports and require calls.",
   "repository": {
     "type": "git",
