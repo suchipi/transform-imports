@@ -25,7 +25,7 @@
     "@babel/runtime": "^7.1.2",
     "@babel/traverse": "^7.1.4",
     "imports-visitor": "2.0.0",
-    "recast": "^0.13.2"
+    "recast": "^0.17.5"
   },
   "devDependencies": {
     "jest-in-case": "^1.0.2"
