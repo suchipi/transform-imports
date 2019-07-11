@@ -42,6 +42,7 @@ module.exports = function transformImports(code, callback, options = {}) {
     },
   };
 
+  console.log(parser);
   const ast = recast.parse(code, { parser });
 
   traverse(ast, {
