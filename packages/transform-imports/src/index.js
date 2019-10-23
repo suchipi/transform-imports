@@ -10,6 +10,7 @@ module.exports = function transformImports(code, callback, options = {}) {
         allowImportExportEverywhere: true,
         allowReturnOutsideFunction: true,
         allowSuperOutsideMethod: true,
+        tokens: true,  
         plugins: [
           // "estree",
           "jsx",
