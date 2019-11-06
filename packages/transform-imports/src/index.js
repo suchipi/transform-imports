@@ -10,7 +10,7 @@ module.exports = function transformImports(code, callback, options = {}) {
         allowImportExportEverywhere: true,
         allowReturnOutsideFunction: true,
         allowSuperOutsideMethod: true,
-        tokens: true,  
+        tokens: true,
         plugins: [
           // "estree",
           "jsx",
@@ -43,7 +43,6 @@ module.exports = function transformImports(code, callback, options = {}) {
     },
   };
 
-  console.log(parser);
   const ast = recast.parse(code, { parser });
 
   traverse(ast, {
