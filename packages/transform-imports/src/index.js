@@ -14,9 +14,9 @@ module.exports = function transformImports(code, callback, options = {}) {
         plugins: [
           // "estree",
           "jsx",
-          "flow",
+          // "flow",
           "flowComments",
-          // "typescript",
+          "typescript",
           "doExpressions",
           "objectRestSpread",
           // "decorators",
