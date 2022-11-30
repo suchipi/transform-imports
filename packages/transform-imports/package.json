@@ -1,6 +1,6 @@
 {
   "name": "transform-imports",
-  "version": "2.1.1",
+  "version": "3.0.0",
   "description": "Easy-to-use API for manipulating imports and require calls.",
   "repository": {
     "type": "git",
@@ -21,10 +21,10 @@
     "rename"
   ],
   "dependencies": {
-    "@babel/parser": "^7.5.0",
-    "@babel/runtime": "^7.5.4",
-    "@babel/traverse": "^7.5.0",
-    "imports-visitor": "2.0.0",
+    "@babel/parser": ">=7.5.0",
+    "@babel/runtime": ">=7.5.4",
+    "@babel/traverse": ">=7.5.0",
+    "imports-visitor": "3.0.0",
     "recast": "^0.18.1"
   },
   "devDependencies": {

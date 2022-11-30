@@ -1,6 +1,6 @@
 {
   "name": "imports-visitor",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Babel visitor that makes it easier to work with imports and require calls.",
   "repository": {
     "type": "git",
@@ -21,9 +21,9 @@
     "rename"
   ],
   "dependencies": {
-    "@babel/core": "^7.5.4",
-    "@babel/runtime": "^7.5.4",
-    "@babel/types": "^7.5.0"
+    "@babel/core": ">=7.5.4",
+    "@babel/runtime": ">=7.5.4",
+    "@babel/types": ">=7.5.0"
   },
   "devDependencies": {
     "@babel/plugin-syntax-dynamic-import": "^7.2.0",

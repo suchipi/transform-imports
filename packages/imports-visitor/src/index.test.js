@@ -291,6 +291,24 @@ cases(
         },
       ],
     },
+    {
+      name: "exports that implicitly import",
+      code: `
+        export * from "blah";
+        export {} from "blah";
+        export * as ns from "blah";
+        export { ns2 as woop } from "blah";
+        export { ns3 } from "blah";
+        export woo from "blah";
+        
+        // shouldn't make any more import defs below this line
+        const potato = 5;
+        export { potato };
+        
+        export const eggplant = 6;
+      `,
+      imports: []
+    },
   ]
 );
 

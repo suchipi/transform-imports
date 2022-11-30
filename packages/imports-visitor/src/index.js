@@ -21,6 +21,26 @@ const importsVisitor = {
       });
     }
   },
+  ExportNamedDeclaration(path, state) {
+    // only interested in exports that are re-exporting something from another
+    // file (and therefore implicitly importing that other file)
+    if (path.node.source == null) return;
+
+    const specifiers = path.get("specifiers");
+    if (specifiers.length === 0) {
+      this.imports.push(new ImportDefinition(path));
+    } else {
+      specifiers.forEach((specifier) => {
+        this.imports.push(new ImportDefinition(specifier));
+      });
+    }
+  },
+  ExportAllDeclaration(path, state) {
+    // shouldn't be possible to get null here, but just in case...
+    if (path.node.source == null) return;
+
+    this.imports.push(new ImportDefinition(path));
+  },
   VariableDeclarator(path, state) {
     if (
       !(
