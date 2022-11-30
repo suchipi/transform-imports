@@ -2,8 +2,7 @@
   "private": true,
   "workspaces": [
     "packages/imports-visitor",
-    "packages/transform-imports",
-    "packages/transform-imports-cli"
+    "packages/transform-imports"
   ],
   "devDependencies": {
     "@babel/cli": "^7.5.0",
