@@ -16,7 +16,6 @@
     "concurrently": "^8.2.2",
     "eslint": "^8.1.0",
     "eslint-config-unobtrusive": "^1.2.5",
-    "eslint-plugin-flowtype": "^8.0.3",
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-react": "^7.34.1",
     "flow-bin": "^0.235.1",

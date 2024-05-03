@@ -1,10 +1,5 @@
 module.exports = {
-  extends: [
-    "unobtrusive",
-    "unobtrusive/flowtype",
-    "unobtrusive/import",
-    "unobtrusive/react",
-  ],
+  extends: ["unobtrusive", "unobtrusive/import", "unobtrusive/react"],
   env: {
     es6: true,
     node: true,
