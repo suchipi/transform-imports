@@ -19,7 +19,8 @@ class ImportDefinition {
       newPath.isImportDefaultSpecifier() || // import `foo` from "bar";
       newPath.isImportSpecifier() || // import `{ foo }` from "bar";
       newPath.isImportNamespaceSpecifier() || // import `* as foo` from "bar";
-      newPath.isImport() || // `import("bar")`;
+      newPath.isImport() || // `import("bar")`; (old AST structure)
+      newPath.isImportExpression() || // `import("bar")`; (new AST structure)
       newPath.isImportDeclaration(); // `import "bar";`
 
     if (!isValidPath) {
@@ -70,7 +71,7 @@ class ImportDefinition {
     } else if (path.isImport()) {
       return path.findParent((parent) => parent.isCallExpression()).node
         .arguments[0].value;
-    } else if (path.isImportDeclaration()) {
+    } else if (path.isImportDeclaration() || path.isImportExpression()) {
       return path.node.source.value;
     }
 
@@ -98,7 +99,7 @@ class ImportDefinition {
         parent.isCallExpression()
       );
       callExpression.node.arguments[0] = t.stringLiteral(newSource);
-    } else if (path.isImportDeclaration()) {
+    } else if (path.isImportDeclaration() || path.isImportExpression()) {
       path.node.source = t.stringLiteral(newSource);
     }
 
@@ -120,7 +121,11 @@ class ImportDefinition {
       def = { name: "*", isImportedAsCJS: true };
     } else if (path.isObjectProperty() && path.get("key").isIdentifier()) {
       def = { name: path.node.key.name, isImportedAsCJS: true };
-    } else if (path.isImport() || path.isImportDeclaration()) {
+    } else if (
+      path.isImport() ||
+      path.isImportDeclaration() ||
+      path.isImportExpression()
+    ) {
       def = { name: "*", isImportedAsCJS: false };
     } else {
       def = { name: null, isImportedAsCJS: true };
@@ -155,7 +160,7 @@ class ImportDefinition {
       return;
     }
 
-    if (this.path.isImport()) {
+    if (this.path.isImport() || this.path.isImportExpression()) {
       throw new Error(
         "Attempted to change the importedExport of an ImportDefinition " +
           `referring to a dynamic import (import("${this.source}")). ` +
@@ -272,7 +277,7 @@ class ImportDefinition {
 
     const path = this.path;
 
-    if (this.path.isImport()) {
+    if (this.path.isImport() || this.path.isImportExpression()) {
       throw new Error(
         "Attempted to change the variableName of an ImportDefinition " +
           `referring to a dynamic import (import("${this.source}")). ` +
@@ -342,7 +347,7 @@ class ImportDefinition {
       );
     }
 
-    if (this.path.isImport()) {
+    if (this.path.isImport() || this.path.isImportExpression()) {
       throw new Error(
         "Attempted to change the kind of an ImportDefinition " +
           `referring to a dynamic import (import("${this.source}")). ` +
@@ -380,14 +385,14 @@ class ImportDefinition {
   }
 
   get isDynamicImport() {
-    if (this.path.isImport()) {
+    if (this.path.isImport() || this.path.isImportExpression()) {
       return true;
     }
     return false;
   }
 
   remove() {
-    if (this.path.isImport()) {
+    if (this.path.isImport() || this.path.isImportExpression()) {
       throw new Error(
         "Attempted to remove an ImportDefinition " +
           `referring to a dynamic import (import("${this.source}")). ` +
@@ -493,7 +498,11 @@ class ImportDefinition {
       // Even though VariableDeclarators are siblings within a
       // VariableDeclaration, they can be modified as independent imports.
       return [path];
-    } else if (path.isImport() || path.isImportDeclaration()) {
+    } else if (
+      path.isImport() ||
+      path.isImportExpression() ||
+      path.isImportDeclaration()
+    ) {
       // Dynamic imports and bare imports are always alone.
       return [path];
     } else if (

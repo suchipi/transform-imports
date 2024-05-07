@@ -9,30 +9,38 @@ const clean = (str) =>
     .filter(Boolean)
     .join(" ");
 
-function transformImports(code, callback) {
-  return babel.transform(code, {
-    babelrc: false,
-    configFile: false,
-    plugins: [
-      "@babel/plugin-syntax-flow",
-      "@babel/plugin-syntax-dynamic-import",
-      () => ({
-        visitor: {
-          Program(path) {
-            const imports = [];
-            path.traverse(importsVisitor, { imports });
-            callback(imports);
+function transformImports(code, babelOptions = {}, callback) {
+  const opts = Object.assign(
+    {
+      babelrc: false,
+      configFile: false,
+    },
+    babelOptions,
+    {
+      plugins: [
+        "@babel/plugin-syntax-flow",
+        "@babel/plugin-syntax-dynamic-import",
+        ...(babelOptions.plugins || []),
+        () => ({
+          visitor: {
+            Program(path) {
+              const imports = [];
+              path.traverse(importsVisitor, { imports });
+              callback(imports);
+            },
           },
-        },
-      }),
-    ],
-  }).code;
+        }),
+      ],
+    }
+  );
+
+  return babel.transform(code, opts).code;
 }
 
 cases(
   "basic parsing works",
-  ({ code, imports }) => {
-    transformImports(code, (actualImports) => {
+  ({ code, imports, babelOptions }) => {
+    transformImports(code, babelOptions, (actualImports) => {
       imports.forEach((importDef, index) => {
         Object.keys(importDef).forEach((key) => {
           expect(actualImports[index]).toHaveProperty(key, importDef[key]);
@@ -291,13 +299,51 @@ cases(
         },
       ],
     },
+    {
+      name: "Dynamic imports (new AST node)",
+      code: `
+        const importPromise = import("something");
+        import("something-else").then((mod) => {
+          console.log(mod.default);
+        });
+      `,
+      babelOptions: {
+        parserOpts: {
+          createImportExpressions: true,
+        },
+      },
+      imports: [
+        {
+          source: "something",
+          variableName: null,
+          importedExport: {
+            name: "*",
+            isImportedAsCJS: false,
+          },
+          kind: "value",
+          isDynamicImport: true,
+          path: expect.any(Object),
+        },
+        {
+          source: "something-else",
+          variableName: null,
+          importedExport: {
+            name: "*",
+            isImportedAsCJS: false,
+          },
+          kind: "value",
+          isDynamicImport: true,
+          path: expect.any(Object),
+        },
+      ],
+    },
   ]
 );
 
 cases(
   "path node type",
-  ({ code, type }) => {
-    transformImports(code, (imports) => {
+  ({ code, type, babelOptions }) => {
+    transformImports(code, babelOptions, (imports) => {
       expect(imports[0].path.node.type).toBe(type);
     });
   },
@@ -363,20 +409,30 @@ cases(
       code: `import("foo")`,
       type: "Import",
     },
+    {
+      name: "dynamic import (new AST node)",
+      code: `import("foo")`,
+      babelOptions: {
+        parserOpts: {
+          createImportExpressions: true,
+        },
+      },
+      type: "ImportExpression",
+    },
   ]
 );
 
 cases(
   "remove method",
-  ({ code, output, index, error }) => {
+  ({ code, output, index, error, babelOptions }) => {
     if (error) {
       expect(() => {
-        transformImports(code, (imports) => {
+        transformImports(code, babelOptions, (imports) => {
           imports[index || 0].remove();
         });
       }).toThrowError();
     } else {
-      const actualOutput = transformImports(code, (imports) => {
+      const actualOutput = transformImports(code, babelOptions, (imports) => {
         imports[index || 0].remove();
       });
       expect(clean(actualOutput)).toBe(clean(output));
@@ -445,13 +501,23 @@ cases(
       code: `import("foo")`,
       error: true,
     },
+    {
+      name: "dynamic import - bare (new AST node)",
+      code: `import("foo")`,
+      babelOptions: {
+        parserOpts: {
+          createImportExpressions: true,
+        },
+      },
+      error: true,
+    },
   ]
 );
 
 cases(
   "forking",
-  ({ code, output, index, insert }) => {
-    const actualOutput = transformImports(code, (imports) => {
+  ({ code, output, index, insert, babelOptions }) => {
+    const actualOutput = transformImports(code, babelOptions, (imports) => {
       const importDef = imports[index || 0];
       importDef.fork({ insert });
     });
@@ -626,6 +692,16 @@ cases(
       output: `import("foo").then(console.log.bind(console));`,
     },
     {
+      name: "dynamic import - new AST node (no-op)",
+      code: `import("foo").then(console.log.bind(console));`,
+      babelOptions: {
+        parserOpts: {
+          createImportExpressions: true,
+        },
+      },
+      output: `import("foo").then(console.log.bind(console));`,
+    },
+    {
       name: "bare import (no-op)",
       code: `import "foo";`,
       output: `import "foo";`,
@@ -635,8 +711,8 @@ cases(
 
 cases(
   "changing source",
-  ({ code, output, index }) => {
-    const actualOutput = transformImports(code, (imports) => {
+  ({ code, output, index, babelOptions }) => {
+    const actualOutput = transformImports(code, babelOptions, (imports) => {
       const importDef = imports[index || 0];
       const ret = (importDef.source = "new-source");
       expect(ret).toBe("new-source");
@@ -725,6 +801,16 @@ cases(
       output: `import("new-source").then(console.log.bind(console));`,
     },
     {
+      name: "dynamic import (new AST node)",
+      code: `import("foo").then(console.log.bind(console));`,
+      babelOptions: {
+        parserOpts: {
+          createImportExpressions: true,
+        },
+      },
+      output: `import("new-source").then(console.log.bind(console));`,
+    },
+    {
       name: "bare import",
       code: `import "foo"`,
       output: `import "new-source";`,
@@ -734,15 +820,15 @@ cases(
 
 cases(
   "changing variableName",
-  ({ code, output, index, error }) => {
+  ({ code, output, index, error, babelOptions }) => {
     if (error) {
       expect(() => {
-        transformImports(code, (imports) => {
+        transformImports(code, babelOptions, (imports) => {
           imports[index || 0].variableName = "newVar";
         });
       }).toThrowError();
     } else {
-      const actualOutput = transformImports(code, (imports) => {
+      const actualOutput = transformImports(code, babelOptions, (imports) => {
         const importDef = imports[index || 0];
         const ret = (importDef.variableName = "newVar");
         expect(ret).toBe("newVar");
@@ -815,6 +901,16 @@ cases(
       error: true,
     },
     {
+      name: "dynamic import (new AST node)",
+      code: `const promise = import("foo");`,
+      babelOptions: {
+        parserOpts: {
+          createImportExpressions: true,
+        },
+      },
+      error: true,
+    },
+    {
       name: "bare import",
       code: `import "foo"`,
       error: true,
@@ -824,15 +920,15 @@ cases(
 
 cases(
   "changing importedExport",
-  ({ code, importedExport, output, index, error }) => {
+  ({ code, importedExport, output, index, error, babelOptions }) => {
     if (error) {
       expect(() => {
-        transformImports(code, (imports) => {
+        transformImports(code, babelOptions, (imports) => {
           imports[index || 0].importedExport = importedExport;
         });
       }).toThrowError();
     } else {
-      const actualOutput = transformImports(code, (imports) => {
+      const actualOutput = transformImports(code, babelOptions, (imports) => {
         const importDef = imports[index || 0];
         const ret = (importDef.importedExport = importedExport);
         expect(ret).toEqual(importedExport);
@@ -1020,6 +1116,16 @@ cases(
       error: true,
     },
     {
+      name: "dynamic import (new AST node)",
+      code: `import("foo").then((fooMod) => fooMod.default())`,
+      babelOptions: {
+        parserOpts: {
+          createImportExpressions: true,
+        },
+      },
+      error: true,
+    },
+    {
       name: "bare import",
       code: `import "foo";`,
       error: true,
@@ -1029,8 +1135,8 @@ cases(
 
 cases(
   "changing named export via variableName and importedExport",
-  ({ code, newName, output, index }) => {
-    const actualOutput = transformImports(code, (imports) => {
+  ({ code, newName, output, index, babelOptions }) => {
+    const actualOutput = transformImports(code, babelOptions, (imports) => {
       const importDef = imports[index || 0];
       importDef.variableName = newName;
       importDef.importedExport.name = newName;
@@ -1055,15 +1161,15 @@ cases(
 
 cases(
   "changing kind",
-  ({ code, kind, output, index, error }) => {
+  ({ code, kind, output, index, error, babelOptions }) => {
     if (error) {
       expect(() => {
-        transformImports(code, (imports) => {
+        transformImports(code, babelOptions, (imports) => {
           imports[index || 0].kind = kind;
         });
       }).toThrowError();
     } else {
-      const actualOutput = transformImports(code, (imports) => {
+      const actualOutput = transformImports(code, babelOptions, (imports) => {
         const importDef = imports[index || 0];
         const ret = (importDef.kind = kind);
         expect(ret).toBe(kind);
@@ -1332,6 +1438,17 @@ cases(
     {
       name: "dynamic import",
       code: `Promise.all([import("foo"), import("bar")]).then(load);`,
+      kind: "type",
+      error: true,
+    },
+    {
+      name: "dynamic import (new AST node)",
+      code: `Promise.all([import("foo"), import("bar")]).then(load);`,
+      babelOptions: {
+        parserOpts: {
+          createImportExpressions: true,
+        },
+      },
       kind: "type",
       error: true,
     },

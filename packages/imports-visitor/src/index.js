@@ -43,7 +43,7 @@ const importsVisitor = {
       this.imports.push(new ImportDefinition(path));
     }
   },
-  Import(path, state) {
+  "Import|ImportExpression"(path, state) {
     this.imports.push(new ImportDefinition(path));
   },
 };
