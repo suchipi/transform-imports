@@ -553,8 +553,7 @@ cases(
       output: `import * as foo from "bar";`,
     },
     {
-      name:
-        "import declaration - default specifier with named specifier (before)",
+      name: "import declaration - default specifier with named specifier (before)",
       code: `import foo, { bar } from "bar";`,
       insert: "before",
       output: `
@@ -563,8 +562,7 @@ cases(
       `,
     },
     {
-      name:
-        "import declaration - default specifier with star specifier (before)",
+      name: "import declaration - default specifier with star specifier (before)",
       code: `import foo, * as bar from "bar";`,
       insert: "before",
       output: `
@@ -582,8 +580,7 @@ cases(
       `,
     },
     {
-      name:
-        "import declaration - named specifier with default specifier (before)",
+      name: "import declaration - named specifier with default specifier (before)",
       code: `import foo, { bar } from "bar";`,
       insert: "before",
       output: `
@@ -1132,8 +1129,7 @@ cases(
     //   output: `import * as foo from "bar";`,
     // },
     {
-      name:
-        "import declaration - default specifier with named specifier - type",
+      name: "import declaration - default specifier with named specifier - type",
       code: `import foo, { bar } from "bar";`,
       kind: "type",
       output: `
@@ -1142,8 +1138,7 @@ cases(
       `,
     },
     {
-      name:
-        "import declaration - default specifier with named specifier - typeof",
+      name: "import declaration - default specifier with named specifier - typeof",
       code: `import foo, { bar } from "bar";`,
       kind: "typeof",
       output: `
@@ -1152,8 +1147,7 @@ cases(
       `,
     },
     {
-      name:
-        "import declaration - default specifier with named specifier - value",
+      name: "import declaration - default specifier with named specifier - value",
       code: `import typeof foo, { bar } from "bar";`,
       kind: "value",
       output: `
@@ -1171,8 +1165,7 @@ cases(
       `,
     },
     {
-      name:
-        "import declaration - default specifier with star specifier - typeof",
+      name: "import declaration - default specifier with star specifier - typeof",
       code: `import foo, * as bar from "bar";`,
       kind: "typeof",
       output: `
@@ -1181,8 +1174,7 @@ cases(
       `,
     },
     {
-      name:
-        "import declaration - default specifier with star specifier - value",
+      name: "import declaration - default specifier with star specifier - value",
       code: `import type foo, * as bar from "bar";`,
       kind: "value",
       output: `
@@ -1218,8 +1210,7 @@ cases(
       `,
     },
     {
-      name:
-        "import declaration - named specifier with default specifier - type",
+      name: "import declaration - named specifier with default specifier - type",
       code: `import foo, { bar } from "bar";`,
       kind: "type",
       output: `
@@ -1229,8 +1220,7 @@ cases(
       index: 1,
     },
     {
-      name:
-        "import declaration - named specifier with default specifier - typeof",
+      name: "import declaration - named specifier with default specifier - typeof",
       code: `import foo, { bar } from "bar";`,
       kind: "typeof",
       output: `
@@ -1240,8 +1230,7 @@ cases(
       index: 1,
     },
     {
-      name:
-        "import declaration - named specifier with default specifier - value",
+      name: "import declaration - named specifier with default specifier - value",
       code: `import type foo, { bar } from "bar";`,
       kind: "value",
       output: `

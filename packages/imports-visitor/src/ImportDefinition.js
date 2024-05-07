@@ -6,13 +6,7 @@ class ImportDefinition {
   }
 
   inspect() {
-    return `ImportDefinition { variableName: "${this.variableName}", source: "${
-      this.source
-    }", importedExport: { name: "${
-      this.importedExport.name
-    }", isImportedAsCJS: ${this.importedExport.isImportedAsCJS} }, kind: "${
-      this.kind
-    }", isDynamicImport: ${this.isDynamicImport} }`;
+    return `ImportDefinition { variableName: "${this.variableName}", source: "${this.source}", importedExport: { name: "${this.importedExport.name}", isImportedAsCJS: ${this.importedExport.isImportedAsCJS} }, kind: "${this.kind}", isDynamicImport: ${this.isDynamicImport} }`;
   }
 
   get path() {

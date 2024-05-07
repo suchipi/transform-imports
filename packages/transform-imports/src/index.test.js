@@ -25,23 +25,25 @@ cases(
         console.log(  "this is unrelated" );
       `,
       action: (imports) => {
-        imports.filter((def) => def.source === "react").forEach((def) => {
-          if (
-            def.importedExport.name === "default" &&
-            def.importedExport.isImportedAsCJS === false
-          ) {
-            def.fork({ insert: "before" });
-            def.importedExport.name = "*";
-          }
+        imports
+          .filter((def) => def.source === "react")
+          .forEach((def) => {
+            if (
+              def.importedExport.name === "default" &&
+              def.importedExport.isImportedAsCJS === false
+            ) {
+              def.fork({ insert: "before" });
+              def.importedExport.name = "*";
+            }
 
-          if (
-            def.variableName === "PropTypes" &&
-            def.importedExport.name === "PropTypes"
-          ) {
-            def.importedExport.name = "default";
-            def.source = "prop-types";
-          }
-        });
+            if (
+              def.variableName === "PropTypes" &&
+              def.importedExport.name === "PropTypes"
+            ) {
+              def.importedExport.name = "default";
+              def.source = "prop-types";
+            }
+          });
       },
       output: `
         import * as React from "react";

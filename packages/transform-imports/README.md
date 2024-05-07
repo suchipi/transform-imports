@@ -493,7 +493,7 @@ import { One } from "most-numbers";
 //   import PropTypes from "prop-types";
 const transformImports = require("transform-imports");
 
-module.exports = function(fileInfo, api, options) {
+module.exports = function (fileInfo, api, options) {
   return transformImports(fileInfo.source, (importDefs) => {
     importDefs.forEach((importDef) => {
       if (importDef.source !== "react") {

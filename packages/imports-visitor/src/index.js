@@ -25,10 +25,7 @@ const importsVisitor = {
     if (
       !(
         path.get("init").isCallExpression() &&
-        path
-          .get("init")
-          .get("callee")
-          .isIdentifier() &&
+        path.get("init").get("callee").isIdentifier() &&
         path.get("init").get("callee").node.name === "require"
       )
     ) {
