@@ -20,14 +20,12 @@
     "jscodeshift",
     "rename"
   ],
-  "peerDependencies": {
-    "@babel/core": ">=7.0.0, <8",
-    "@babel/runtime": ">=7.0.0, <8",
-    "@babel/types": ">=7.0.0, <8"
-  },
   "dependencies": {
+    "@babel/core": "^7.24.5",
+    "@babel/runtime": "^7.24.5",
+    "@babel/types": "^7.24.5",
     "imports-visitor": "2.0.0",
-    "recast": "^0.18.1"
+    "recast": "^0.23.6"
   },
   "devDependencies": {
     "jest-in-case": "^1.0.2"
