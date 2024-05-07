@@ -1,6 +1,6 @@
 {
   "name": "imports-visitor",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Babel visitor that makes it easier to work with imports and require calls.",
   "repository": {
     "type": "git",
